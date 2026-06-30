@@ -11,7 +11,8 @@ app = typer.Typer(
 
 @app.command()
 def etl(
-    pipeline: Optional[str] = typer.Argument(None, help="Nombre del pipeline (ej: ventas). Si se omite, ejecuta todos.")
+    pipeline: Optional[str] = typer.Argument(None, help="Nombre del pipeline (ej: ventas). Si se omite, ejecuta todos."),
+    archivo: Optional[str] = typer.Option(None, "--archivo", "-a", help="Archivo de entrada en data/raw/ (ej: ventas_enero.csv)."),
 ):
     """Ejecuta los pipelines de ingesta de datos hacia DuckDB."""
     pipelines_dir = Path("pipelines")
@@ -25,14 +26,27 @@ def etl(
         typer.echo("No se encontraron pipelines ETL.")
         raise typer.Exit(1)
 
+    if archivo and not pipeline:
+        typer.echo("--archivo requiere especificar un pipeline. Ej: uv run main.py etl ventas --archivo ventas_enero.csv", err=True)
+        raise typer.Exit(1)
+
+    if archivo:
+        ruta = Path("data/raw") / archivo
+        if not ruta.exists():
+            typer.echo(f"Archivo no encontrado: {ruta}", err=True)
+            raise typer.Exit(1)
+
     for path in targets:
         if not path.exists():
             typer.echo(f"Pipeline no encontrado: {path}", err=True)
             raise typer.Exit(1)
 
-        typer.echo(f"Ejecutando {path.name}...")
+        msg = f"Ejecutando {path.name}"
+        msg += f" con archivo '{archivo}'" if archivo else ""
+        typer.echo(msg + "...")
+
         module = _load_module(path)
-        module.run()
+        module.run(archivo=archivo)
 
     typer.echo("ETL completado.")
 

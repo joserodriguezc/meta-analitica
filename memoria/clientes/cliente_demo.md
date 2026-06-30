@@ -31,6 +31,22 @@ El cliente quiere visualizar un **reporte web de ventas mensual** que incluya:
 |---|---|---|---|
 | Sistema de ventas | CSV | `data/raw/ventas_demo.csv` | Diario |
 
+## Convención de Archivos
+
+El cliente puede enviar archivos con distintos nombres. El ETL los acepta vía `--archivo`:
+
+```bash
+# Archivo por defecto
+uv run main.py etl ventas
+
+# Archivo específico enviado por el cliente
+uv run main.py etl ventas --archivo ventas_enero_2026.csv
+uv run main.py etl ventas --archivo ventas_q1_2026.csv
+```
+
+**Regla:** El archivo siempre debe depositarse en `data/raw/` antes de ejecutar el ETL.
+El esquema esperado (columnas y tipos) está definido en `memoria/metricas/ventas.md`.
+
 ## Historial de Entregas
 
 | Fecha | Entregable | Estado |

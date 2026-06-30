@@ -6,12 +6,13 @@ import polars as pl
 from pathlib import Path
 from core_agent.skills import duckdb_client as db
 
-RAW_PATH = Path("data/raw/ventas_demo.csv")
+RAW_PATH_DEFAULT = Path("data/raw/ventas_demo.csv")
 TABLE_NAME = "ventas"
 
 
-def extract() -> pl.DataFrame:
-    return pl.read_csv(RAW_PATH)
+def extract(archivo: str | None = None) -> pl.DataFrame:
+    ruta = Path("data/raw") / archivo if archivo else RAW_PATH_DEFAULT
+    return pl.read_csv(ruta)
 
 
 def transform(df: pl.DataFrame) -> pl.DataFrame:
@@ -40,9 +41,10 @@ def load(df: pl.DataFrame) -> int:
     return db.load_table(df, TABLE_NAME, replace=True)
 
 
-def run():
-    print(f"  Leyendo {RAW_PATH}...")
-    df_raw = extract()
+def run(archivo: str | None = None):
+    ruta = Path("data/raw") / archivo if archivo else RAW_PATH_DEFAULT
+    print(f"  Leyendo {ruta}...")
+    df_raw = extract(archivo)
 
     print(f"  Transformando {len(df_raw)} filas...")
     df_clean = transform(df_raw)
