@@ -13,6 +13,7 @@ app = typer.Typer(
 def etl(
     pipeline: Optional[str] = typer.Argument(None, help="Nombre del pipeline (ej: ventas). Si se omite, ejecuta todos."),
     archivo: Optional[str] = typer.Option(None, "--archivo", "-a", help="Archivo de entrada en data/raw/ (ej: ventas_enero.csv)."),
+    acumular: bool = typer.Option(False, "--acumular", help="Acumula filas nuevas sin borrar los datos existentes."),
 ):
     """Ejecuta los pipelines de ingesta de datos hacia DuckDB."""
     pipelines_dir = Path("pipelines")
@@ -41,12 +42,13 @@ def etl(
             typer.echo(f"Pipeline no encontrado: {path}", err=True)
             raise typer.Exit(1)
 
-        msg = f"Ejecutando {path.name}"
-        msg += f" con archivo '{archivo}'" if archivo else ""
+        modo = "acumular" if acumular else "reemplazar"
+        msg = f"Ejecutando {path.name} [{modo}]"
+        msg += f" · archivo '{archivo}'" if archivo else ""
         typer.echo(msg + "...")
 
         module = _load_module(path)
-        module.run(archivo=archivo)
+        module.run(archivo=archivo, acumular=acumular)
 
     typer.echo("ETL completado.")
 

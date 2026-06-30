@@ -33,6 +33,25 @@ def load_table(df: pl.DataFrame, table_name: str, replace: bool = True) -> int:
     return len(df)
 
 
+def append_new_rows(df: pl.DataFrame, table_name: str, pk: str) -> tuple[int, int]:
+    """Inserta solo filas cuyo pk no existe ya en la tabla. Retorna (insertadas, omitidas)."""
+    if not table_exists(table_name):
+        load_table(df, table_name, replace=False if False else True)
+        return len(df), 0
+
+    with connection() as conn:
+        existing_keys = conn.execute(f"SELECT {pk} FROM {table_name}").pl()[pk].to_list()
+
+    df_new = df.filter(~pl.col(pk).is_in(existing_keys))
+    omitidas = len(df) - len(df_new)
+
+    if len(df_new) > 0:
+        with connection() as conn:
+            conn.execute(f"INSERT INTO {table_name} SELECT * FROM df_new")
+
+    return len(df_new), omitidas
+
+
 def table_exists(table_name: str) -> bool:
     """Verifica si una tabla existe en DuckDB."""
     with connection(read_only=True) as conn:
