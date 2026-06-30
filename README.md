@@ -1,32 +1,35 @@
 # meta-analitica
 
-**Arnés Analítico con Agentes de IA — PoC MalayAI**
+**Arnés Analítico con Agentes de IA — PoC MalayAI Lab**
 
-Plataforma analítica basada en el paradigma de *Harness Engineering*. En lugar de construir un agente conversacional propio, el proyecto provee una infraestructura controlada (CLI + DuckDB + reportes HTML) que permite a herramientas de IA existentes (Claude Code, Copilot, Cursor) operar sobre datos y reglas de negocio de forma auditable.
+Plataforma analítica basada en el paradigma de *Harness Engineering*. En lugar de construir un agente conversacional propio, el proyecto provee una infraestructura controlada (CLI + DuckDB + dashboards Streamlit) que permite a herramientas de IA existentes (Claude Code, Copilot, Cursor) operar sobre datos y reglas de negocio de forma auditable. El humano actúa como supervisor y aprobador.
 
 ---
 
 ## Flujo de Trabajo
 
 ```
-[ REQUERIMIENTO ] → [ INGENIERO + IA ] → [ etl ] → [ test ] → [ deploy ] → [ REPORTE HTML ]
+[ CSV del cliente ] → [ etl ] → [ test ] → [ deploy ] → [ Dashboard Streamlit ]
+         ↑                                                         ↑
+   data/raw/               IA opera el arnés              Browser interactivo
 ```
 
 ### Comandos
 
 ```bash
-uv run main.py etl       # Ingesta datos CSV → DuckDB
-uv run main.py test      # Valida calidad con Pandera (bloquea si hay errores)
-uv run main.py deploy    # Genera reporte HTML estático desde DuckDB
-uv run main.py memoria   # Muestra el índice de conocimiento de negocio
-```
+uv run main.py etl                          # Ingesta todos los dominios → DuckDB
+uv run main.py etl ventas                   # Solo el pipeline de ventas
+uv run main.py etl ventas --archivo ventas_enero.csv   # Archivo específico
+uv run main.py etl ventas --acumular        # Modo incremental (no reemplaza)
 
-Todos los comandos aceptan un argumento opcional para operar sobre un dominio específico:
+uv run main.py test                         # Valida todos los dominios con Pandera
+uv run main.py test ventas                  # Solo valida la tabla ventas
 
-```bash
-uv run main.py etl ventas       # Solo ejecuta etl_ventas.py
-uv run main.py test ventas      # Solo valida la tabla ventas
-uv run main.py deploy ventas    # Solo genera reports/ventas.html
+uv run main.py deploy                       # Levanta la app unificada (4 dominios)
+uv run main.py deploy ventas                # Solo el reporte de ventas
+uv run main.py deploy --puerto 8502         # Puerto personalizado
+
+uv run main.py memoria                      # Muestra el índice de conocimiento de negocio
 ```
 
 ---
@@ -39,8 +42,19 @@ uv run main.py deploy ventas    # Solo genera reports/ventas.html
 | Motor analítico | DuckDB (in-process) |
 | Transformaciones | Polars |
 | Validación de datos | Pandera |
-| Reportes | HTML estático generado con Python |
+| Reportes interactivos | Streamlit + Plotly |
 | Gestión de dependencias | uv |
+
+---
+
+## Dominios Analíticos
+
+| Dominio | Tabla DuckDB | Reporte | KPIs principales |
+|---|---|---|---|
+| Ventas | `ventas` | `reports/ventas.py` | Ingresos, ticket promedio, órdenes |
+| Inventario | `inventario` | `reports/inventario.py` | Valor stock, margen, quiebre |
+| Campañas | `campanas` | `reports/campanas.py` | ROAS, ROI, CTR, CPC, CPA |
+| Devoluciones | `devoluciones` | `reports/devoluciones.py` | Tasa aprobación, reembolso |
 
 ---
 
@@ -49,18 +63,32 @@ uv run main.py deploy ventas    # Solo genera reports/ventas.html
 ```
 meta-analitica/
 ├── CLAUDE.md                  ← Harness context para el agente de IA
+├── app.py                     ← App Streamlit unificada (4 dominios)
+├── assets/
+│   └── malayai_logo.png       ← Logo para el sidebar de reportes
 ├── memoria/                   ← Conocimiento del negocio (leer antes de codear)
 │   ├── index.md               ← Mapa de memoria
 │   ├── log.md                 ← Bitácora de decisiones
-│   ├── metricas/              ← Definiciones de KPIs y esquemas
+│   ├── metricas/              ← Definiciones de KPIs por dominio
 │   └── clientes/              ← Perfil y requerimientos por cliente
 ├── core_agent/
-│   ├── skills/                ← Herramientas reutilizables (DuckDB, report builder)
+│   ├── skills/                ← Herramientas reutilizables
+│   │   ├── duckdb_client.py   ← Wrapper DuckDB (query, load, append)
+│   │   └── chart_builder.py   ← Helpers Plotly + CSS premium MalayAI
 │   └── tasks/                 ← Recetas paso a paso para el agente
-├── pipelines/                 ← Scripts ETL y validaciones
-├── reports/                   ← Scripts de reportes → genera .html
+├── pipelines/
+│   ├── etl_ventas.py
+│   ├── etl_inventario.py
+│   ├── etl_campanas.py
+│   ├── etl_devoluciones.py
+│   └── calidad.py             ← Schemas Pandera para todos los dominios
+├── reports/
+│   ├── ventas.py
+│   ├── inventario.py
+│   ├── campanas.py
+│   └── devoluciones.py
 ├── data/
-│   ├── raw/                   ← Archivos CSV/JSON de entrada
+│   ├── raw/                   ← Archivos CSV de entrada (solo lectura)
 │   └── local.duckdb           ← Almacén analítico (generado, en .gitignore)
 └── main.py                    ← Punto de entrada CLI
 ```
@@ -71,7 +99,7 @@ meta-analitica/
 
 ```bash
 # Requiere uv — https://docs.astral.sh/uv/
-git clone <repo>
+git clone https://github.com/joserodriguezc/meta-analitica
 cd meta-analitica
 uv sync
 ```
@@ -79,34 +107,53 @@ uv sync
 ## Demo rápida
 
 ```bash
-uv run main.py etl      # Carga ventas_demo.csv → DuckDB
-uv run main.py test     # Valida: 90 filas OK
-uv run main.py deploy   # Genera reports/ventas.html
-```
+# 1. Cargar datos de los 4 dominios
+uv run main.py etl ventas      --archivo ventas_demo.csv
+uv run main.py etl inventario  --archivo inventario_agosto.csv
+uv run main.py etl campanas    --archivo campanas_q3_2026.csv
+uv run main.py etl devoluciones --archivo devoluciones_q3_2026.csv
 
-Abrir `reports/ventas.html` en cualquier navegador.
+# 2. Validar calidad (bloquea si hay errores)
+uv run main.py test
+
+# 3. Levantar la app interactiva
+uv run main.py deploy
+# → Abre http://localhost:8501 con los 4 dashboards
+```
 
 ---
 
 ## Cómo agregar un nuevo dominio analítico
 
-El agente de IA (Claude Code) puede hacer esto en un solo prompt. El flujo es:
+Usar este prompt con Claude Code (u otro agente):
 
-1. Leer `memoria/index.md` → identificar el dominio
-2. Leer `core_agent/tasks/crear_etl.md` → crear `pipelines/etl_<dominio>.py`
-3. Leer `core_agent/tasks/validar_calidad.md` → agregar esquema en `pipelines/calidad.py`
-4. Leer `core_agent/tasks/crear_reporte.md` → crear `reports/<dominio>.py`
-5. Ejecutar `uv run main.py etl && uv run main.py test && uv run main.py deploy`
+```
+El cliente mandó <archivo.csv> con columnas <col1, col2, ...>.
+
+Crea el dominio de <nombre> siguiendo las reglas del harness:
+1. Lee CLAUDE.md y memoria/index.md antes de escribir cualquier código
+2. Crea memoria/metricas/<dominio>.md con esquema, KPIs y reglas de negocio
+3. Crea pipelines/etl_<dominio>.py siguiendo core_agent/tasks/crear_etl.md
+4. Agrega schema_<dominio> en pipelines/calidad.py
+5. Crea reports/<dominio>.py como app Streamlit con chart_builder
+6. Actualiza memoria/index.md
+7. Verifica: uv run main.py etl <dominio> --archivo <archivo.csv> &&
+             uv run main.py test <dominio> &&
+             uv run main.py deploy <dominio>
+```
+
+El agente no termina hasta que el flujo pase limpio.
 
 ---
 
 ## Principios del Arnés
 
-- **Agnóstico del arnés:** No construye su propio agente. Delega al IDE/terminal.
+- **Agnóstico del LLM:** No construye su propio agente. Delega al IDE/terminal.
 - **Agents-as-Code:** Las reglas del agente viven en `.md` versionados en Git.
 - **Memoria transparente:** El contexto de negocio está en `memoria/`, legible por humanos e IA.
-- **Infraestructura ligera:** DuckDB in-process + HTML estático, sin servidores.
+- **Calidad como bloqueo:** `test` falla con exit code 1 si hay errores — no hay deploy sin datos limpios.
+- **Infraestructura ligera:** DuckDB in-process + Streamlit local, sin servidores ni cloud.
 
 ---
 
-*MalayAI — 2026*
+*MalayAI Lab — 2026*
