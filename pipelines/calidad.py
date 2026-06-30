@@ -81,7 +81,7 @@ schema_inventario = pa.DataFrameSchema(
 
 # ── CAMPAÑAS ──────────────────────────────────────────────────────────────────
 
-CANALES_CAMPANAS = ["google", "meta", "tiktok", "email"]
+CANALES_CAMPANAS = ["email", "redes_sociales", "display", "search", "video"]
 ESTADOS_CAMPANAS = ["activa", "finalizada", "futura"]
 
 schema_campanas = pa.DataFrameSchema(

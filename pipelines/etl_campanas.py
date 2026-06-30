@@ -11,7 +11,7 @@ RAW_PATH_DEFAULT = Path("data/raw/campanas_demo.csv")
 TABLE_NAME = "campanas"
 PK = "id_campana"
 
-CANALES_VALIDOS = ["email", "redes_sociales", "display", "search", "video"]
+CANALES_VALIDOS = ["email", "redes_sociales", "display", "search", "video"]  # estándar del proyecto
 
 
 def extract(archivo: str | None = None) -> pl.DataFrame:
