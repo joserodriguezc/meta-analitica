@@ -1,0 +1,21 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Datos locales (no versionar)
+data/local.duckdb
+data/raw/
+
+# Reportes generados
+reports/*.html
+reports/__marimo__/
+
+# PDF de referencia
+*.pdf

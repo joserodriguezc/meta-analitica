@@ -1,0 +1,14 @@
+[project]
+name = "meta-analitica"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "duckdb>=1.5.4",
+    "marimo>=0.23.11",
+    "pandera[polars]>=0.32.1",
+    "polars>=1.42.0",
+    "pyarrow>=24.0.0",
+    "typer>=0.26.8",
+]
