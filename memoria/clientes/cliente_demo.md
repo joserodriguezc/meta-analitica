@@ -30,6 +30,7 @@ El cliente quiere visualizar un **reporte web de ventas mensual** que incluya:
 | Fuente | Formato | Ruta | Frecuencia |
 |---|---|---|---|
 | Sistema de ventas | CSV | `data/raw/ventas_demo.csv` | Diario |
+| Sistema de logística | CSV | `data/raw/envios_<periodo>.csv` | Por período (Q1/Q2/Q3/Q4) |
 
 ## Convención de Archivos
 
@@ -52,9 +53,10 @@ El esquema esperado (columnas y tipos) está definido en `memoria/metricas/venta
 | Fecha | Entregable | Estado |
 |---|---|---|
 | 2026-06-29 | Configuración inicial del harness | Completado |
-| Pendiente | ETL de ventas | En desarrollo |
-| Pendiente | Validación de calidad | En desarrollo |
-| Pendiente | Reporte HTML de ventas | En desarrollo |
+| 2026-06-29 | ETL de ventas + validación Pandera | Completado |
+| 2026-06-29 | Dominio campañas (ETL + validación + reporte) | Completado |
+| 2026-06-29 | Dominio devoluciones (ETL + validación + reporte) | Completado |
+| 2026-06-30 | Dominio envíos (ETL + validación + reporte) | Completado |
 
 ## Contacto
 

@@ -24,10 +24,11 @@ ventas       = st.Page("reports/ventas.py",       title="Ventas",       icon="�
 inventario   = st.Page("reports/inventario.py",   title="Inventario",   icon="📦")
 campanas     = st.Page("reports/campanas.py",      title="Campañas",     icon="📣")
 devoluciones = st.Page("reports/devoluciones.py", title="Devoluciones", icon="↩️")
+envios       = st.Page("reports/envios.py",        title="Envíos",       icon="🚚")
 
 # position="hidden" para controlar el orden del sidebar manualmente
 pg = st.navigation(
-    {"Analítica": [ventas, inventario, campanas, devoluciones]},
+    {"Analítica": [ventas, inventario, campanas, devoluciones, envios]},
     position="hidden",
 )
 
@@ -46,6 +47,7 @@ with st.sidebar:
     st.page_link(inventario,   label="Inventario",   icon="📦")
     st.page_link(campanas,     label="Campañas",     icon="📣")
     st.page_link(devoluciones, label="Devoluciones", icon="↩️")
+    st.page_link(envios,       label="Envíos",       icon="🚚")
     st.divider()
 
 st.session_state["_logo_rendered"] = True

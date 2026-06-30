@@ -55,6 +55,7 @@ uv run main.py memoria                      # Muestra el índice de conocimiento
 | Inventario | `inventario` | `reports/inventario.py` | Valor stock, margen, quiebre |
 | Campañas | `campanas` | `reports/campanas.py` | ROAS, ROI, CTR, CPC, CPA |
 | Devoluciones | `devoluciones` | `reports/devoluciones.py` | Tasa aprobación, reembolso |
+| Envíos | `envios` | `reports/envios.py` | Tasa entrega a tiempo, retrasos, costo courier |
 
 ---
 
@@ -81,12 +82,14 @@ meta-analitica/
 │   ├── etl_inventario.py
 │   ├── etl_campanas.py
 │   ├── etl_devoluciones.py
+│   ├── etl_envios.py
 │   └── calidad.py             ← Schemas Pandera para todos los dominios
 ├── reports/
 │   ├── ventas.py
 │   ├── inventario.py
 │   ├── campanas.py
-│   └── devoluciones.py
+│   ├── devoluciones.py
+│   └── envios.py
 ├── data/
 │   ├── raw/                   ← Archivos CSV de entrada (solo lectura)
 │   └── local.duckdb           ← Almacén analítico (generado, en .gitignore)

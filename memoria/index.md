@@ -11,6 +11,7 @@ El agente debe leerlo antes de ejecutar cualquier tarea analítica.
 | [metricas/inventario.md](metricas/inventario.md) | Inventario | Stock, valor, margen bruto, alertas de quiebre |
 | [metricas/campanas.md](metricas/campanas.md) | Campañas | ROAS, ROI, CTR, CPC, CPA, tasa de conversión |
 | [metricas/devoluciones.md](metricas/devoluciones.md) | Devoluciones | Tasa de aprobación, reembolso total/promedio, motivos, canales |
+| [metricas/envios.md](metricas/envios.md) | Envíos | Tasa de entrega a tiempo, tasa de retraso, costo de envíos, días de retraso |
 
 ## Clientes Activos
 
@@ -24,7 +25,7 @@ El agente debe leerlo antes de ejecutar cualquier tarea analítica.
 |---|---|
 | [../core_agent/tasks/crear_etl.md](../core_agent/tasks/crear_etl.md) | Crear un nuevo pipeline de ingesta |
 | [../core_agent/tasks/validar_calidad.md](../core_agent/tasks/validar_calidad.md) | Validar calidad de datos con Pandera |
-| [../core_agent/tasks/crear_reporte.md](../core_agent/tasks/crear_reporte.md) | Generar un reporte HTML con Marimo |
+| [../core_agent/tasks/crear_reporte.md](../core_agent/tasks/crear_reporte.md) | Generar un reporte Streamlit interactivo |
 
 ## Novedades Recientes
 

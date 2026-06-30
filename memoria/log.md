@@ -118,6 +118,37 @@ Registro cronológico de decisiones técnicas y de negocio relevantes para el pr
 
 ---
 
+## 2026-06-30 — Sprint 8: Dominio de Envíos
+
+**Decisión:** Crear el dominio `envios` completo: ETL, validación Pandera y reporte Streamlit.
+
+**Contexto:** El cliente envió `envios_q3_2026.csv` con 11 columnas: id_envio, id_orden, fecha_despacho, fecha_entrega_estimada, fecha_entrega_real, courier, tipo_envio, costo_envio, region_destino, estado, peso_kg.
+
+**Columnas derivadas calculadas en ETL:**
+- `dias_retraso` — diferencia en días entre fecha_entrega_real y fecha_entrega_estimada (null para envíos en tránsito)
+- `mes` — truncado al primer día del mes de `fecha_despacho`
+
+**Valores controlados:**
+- Couriers: `chilexpress`, `starken`, `bluexpress`, `correos`
+- Tipos: `estandar`, `express`, `mismo_dia`
+- Estados: `entregado`, `retrasado`, `en_transito`
+
+**KPIs principales:**
+- Tasa de entrega a tiempo = entregados / (entregados + retrasados) * 100
+- Tasa de retraso = retrasados / (entregados + retrasados) * 100
+- Costo total y promedio de envíos
+- Días promedio de retraso (solo envíos retrasados)
+
+**Archivos creados:**
+- `data/raw/envios_q3_2026.csv` — 30 envíos Q3 2026 (archivo provisto por el cliente)
+- `memoria/metricas/envios.md` — definiciones de negocio
+- `pipelines/etl_envios.py` — ETL con 2 columnas derivadas
+- `pipelines/calidad.py` — agregado `schema_envios` con 13 columnas validadas
+- `reports/envios.py` — 4 secciones: KPIs, distribuciones, por región/tipo, evolución mensual
+- `app.py` — registrada la página Envíos 🚚 en la navegación unificada
+
+---
+
 ## 2026-06-29 — Sprint 5: Capa de Reportes
 
 **Decisión:** Reemplazar `marimo export html` por generación directa de HTML estático desde Python.

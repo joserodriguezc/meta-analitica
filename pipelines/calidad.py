@@ -161,6 +161,39 @@ schema_devoluciones = pa.DataFrameSchema(
     name="devoluciones",
 )
 
+# ── ENVÍOS ───────────────────────────────────────────────────────────────────
+
+COURIERS_VALIDOS = ["chilexpress", "starken", "bluexpress", "correos"]
+TIPOS_ENVIO = ["estandar", "express", "mismo_dia"]
+ESTADOS_ENVIO = ["entregado", "retrasado", "en_transito"]
+
+schema_envios = pa.DataFrameSchema(
+    columns={
+        "id_envio": pa.Column(str, nullable=False, unique=True),
+        "id_orden": pa.Column(str, nullable=False),
+        "fecha_despacho": pa.Column(pl.Date, nullable=False),
+        "fecha_entrega_estimada": pa.Column(pl.Date, nullable=False),
+        "fecha_entrega_real": pa.Column(pl.Date, nullable=True),
+        "courier": pa.Column(str, nullable=False,
+                             checks=pa.Check.isin(COURIERS_VALIDOS,
+                                                  error=f"Courier debe ser uno de: {COURIERS_VALIDOS}")),
+        "tipo_envio": pa.Column(str, nullable=False,
+                                checks=pa.Check.isin(TIPOS_ENVIO,
+                                                     error=f"Tipo envío debe ser uno de: {TIPOS_ENVIO}")),
+        "costo_envio": pa.Column(pl.Float64, nullable=False,
+                                 checks=pa.Check.greater_than(0, error="Costo envío debe ser mayor a 0")),
+        "region_destino": pa.Column(str, nullable=False),
+        "estado": pa.Column(str, nullable=False,
+                            checks=pa.Check.isin(ESTADOS_ENVIO,
+                                                 error=f"Estado debe ser uno de: {ESTADOS_ENVIO}")),
+        "peso_kg": pa.Column(pl.Float64, nullable=False,
+                             checks=pa.Check.greater_than(0, error="Peso debe ser mayor a 0")),
+        "dias_retraso": pa.Column(pl.Int64, nullable=True),
+        "mes": pa.Column(pl.Date, nullable=False),
+    },
+    name="envios",
+)
+
 # ── MOTOR ─────────────────────────────────────────────────────────────────────
 
 SCHEMAS = {
@@ -168,6 +201,7 @@ SCHEMAS = {
     "inventario": schema_inventario,
     "campanas": schema_campanas,
     "devoluciones": schema_devoluciones,
+    "envios": schema_envios,
 }
 
 
