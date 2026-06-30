@@ -145,18 +145,14 @@ details {
 
 
 def inject_css() -> None:
-    """Inyecta el CSS premium. Llama una sola vez por sesión."""
-    if st.session_state.get("_css_injected"):
-        return
+    """Inyecta el CSS premium. Se re-inyecta en cada render (necesario para navegación multi-página)."""
     st.markdown(_CSS, unsafe_allow_html=True)
-    st.session_state["_css_injected"] = True
 
 
 def sidebar_logo() -> None:
-    """Logo pequeño + nombre de app en el sidebar. No duplica si ya existe."""
-    if st.session_state.get("_logo_rendered"):
-        return
-    _render_sidebar_brand()
+    """Logo en sidebar para modo standalone. En app.py lo maneja _render_sidebar_brand()."""
+    if not st.session_state.get("_logo_rendered"):
+        _render_sidebar_brand()
 
 
 def _render_sidebar_brand() -> None:
