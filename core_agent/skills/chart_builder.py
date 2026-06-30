@@ -166,14 +166,9 @@ def _render_sidebar_brand() -> None:
         img_b64 = base64.b64encode(LOGO_PATH.read_bytes()).decode()
         st.sidebar.markdown(
             f"""
-            <div style="display:flex;flex-direction:column;align-items:center;
-                        padding:1rem 0 0.25rem;">
+            <div style="display:flex;justify-content:center;padding:1rem 0 0.25rem;">
                 <img src="data:image/png;base64,{img_b64}"
                      width="72" style="border-radius:10px;" />
-                <span style="color:#E2E8F0;font-size:0.78rem;font-weight:600;
-                             letter-spacing:0.3px;margin-top:8px;">MalayAI Lab</span>
-                <span style="color:#475569;font-size:0.65rem;
-                             letter-spacing:0.5px;">Arnés Analítico</span>
             </div>
             """,
             unsafe_allow_html=True,
