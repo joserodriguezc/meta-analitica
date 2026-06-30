@@ -1,111 +1,168 @@
 """
-Reporte de inventario — genera reports/inventario.html con datos pre-computados desde DuckDB.
-Basado en los KPIs de memoria/metricas/inventario.md.
+Reporte interactivo de inventario — Streamlit + Plotly.
+KPIs y gráficos basados en memoria/metricas/inventario.md.
 """
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import streamlit as st
 import polars as pl
 from core_agent.skills import duckdb_client as db
-from core_agent.skills.report_builder import (
-    clp, _kpi_card, _tabla, generar_html
+from core_agent.skills.chart_builder import (
+    sidebar_logo, barras, treemap, pie, kpi
 )
 
-OUTPUT = Path(__file__).parent / "inventario.html"
+st.set_page_config(
+    page_title="Inventario · MalayAI",
+    page_icon="📦",
+    layout="wide",
+)
 
+# ── Sidebar ────────────────────────────────────────────────────────────────────
 
-def _seccion_kpis() -> str:
-    resumen = db.query("""
-        SELECT
-            SUM(valor_stock)                                    AS valor_total,
-            COUNT(*)                                            AS total_productos,
-            COUNT(*) FILTER (WHERE bajo_minimo AND estado = 'activo') AS en_riesgo,
-            COUNT(*) FILTER (WHERE estado = 'agotado')          AS agotados,
-            ROUND(AVG(margen_bruto), 1)                         AS margen_promedio
-        FROM inventario
-    """).to_dicts()[0]
+sidebar_logo()
+st.sidebar.title("Filtros")
 
-    cards = "".join([
-        _kpi_card("Valor del Inventario", clp(resumen["valor_total"])),
-        _kpi_card("Productos Totales", str(resumen["total_productos"])),
-        _kpi_card("En Riesgo de Quiebre", str(resumen["en_riesgo"]), '<span style="color:#ef4444">▼ requiere reposición</span>' if resumen["en_riesgo"] > 0 else ""),
-        _kpi_card("Margen Promedio", f'{resumen["margen_promedio"]}%'),
-    ])
-    return f'<h3>Resumen General de Inventario</h3><div class="kpi-row">{cards}</div>'
+categorias = db.query("SELECT DISTINCT categoria FROM inventario ORDER BY categoria").to_series().to_list()
+sel_cats = st.sidebar.multiselect("Categorías", categorias, default=categorias)
 
+bodegas = db.query("SELECT DISTINCT bodega FROM inventario ORDER BY bodega").to_series().to_list()
+sel_bodegas = st.sidebar.multiselect("Bodegas", bodegas, default=bodegas)
 
-def _seccion_quiebre() -> str:
-    df = db.query("""
-        SELECT
-            id_producto     AS SKU,
-            nombre_producto AS Producto,
-            categoria       AS Categoría,
-            stock_actual    AS Stock,
-            stock_minimo    AS Mínimo,
-            ROUND(cobertura, 2) AS Cobertura,
-            bodega          AS Bodega
-        FROM inventario
-        WHERE bajo_minimo = true AND estado = 'activo'
-        ORDER BY cobertura ASC
+estados = db.query("SELECT DISTINCT estado FROM inventario ORDER BY estado").to_series().to_list()
+sel_estados = st.sidebar.multiselect("Estado", estados, default=estados)
+
+mostrar_quiebre = st.sidebar.toggle("Solo productos en riesgo", value=False)
+
+if not sel_cats or not sel_bodegas or not sel_estados:
+    st.warning("Selecciona al menos un valor en cada filtro.")
+    st.stop()
+
+cats_sql    = ", ".join(f"'{c}'" for c in sel_cats)
+bodegas_sql = ", ".join(f"'{b}'" for b in sel_bodegas)
+estados_sql = ", ".join(f"'{e}'" for e in sel_estados)
+
+where = f"categoria IN ({cats_sql}) AND bodega IN ({bodegas_sql}) AND estado IN ({estados_sql})"
+if mostrar_quiebre:
+    where += " AND bajo_minimo = true"
+
+# ── Título ────────────────────────────────────────────────────────────────────
+
+st.title("Reporte de Inventario")
+st.caption("Cliente Demo S.A. · MalayAI Arnés Analítico")
+st.divider()
+
+# ── KPIs ──────────────────────────────────────────────────────────────────────
+
+def _clp(v):
+    return f"${v:,.0f}".replace(",", ".")
+
+totales = db.query(f"""
+    SELECT
+        SUM(valor_stock)                           AS valor_inventario,
+        COUNT(*)                                   AS total_productos,
+        SUM(CASE WHEN bajo_minimo THEN 1 END)      AS en_riesgo,
+        ROUND(AVG(margen_bruto), 1)                AS margen_promedio,
+        SUM(CASE WHEN estado='agotado' THEN 1 END) AS agotados
+    FROM inventario WHERE {where}
+""").to_dicts()[0]
+
+c1, c2, c3, c4, c5 = st.columns(5)
+with c1: kpi("Valor Inventario", _clp(totales["valor_inventario"] or 0))
+with c2: kpi("Total Productos", str(int(totales["total_productos"] or 0)))
+with c3: kpi("En Riesgo", str(int(totales["en_riesgo"] or 0)))
+with c4: kpi("Margen Promedio", f"{totales['margen_promedio'] or 0:.1f}%")
+with c5: kpi("Agotados", str(int(totales["agotados"] or 0)))
+
+st.divider()
+
+# ── Gráficos fila 1: Treemap + Margen por categoría ───────────────────────────
+
+df_cat = db.query(f"""
+    SELECT categoria AS Categoría, SUM(valor_stock) AS Valor, COUNT(*) AS Productos
+    FROM inventario WHERE {where}
+    GROUP BY categoria ORDER BY Valor DESC
+""")
+
+df_margen = db.query(f"""
+    SELECT categoria AS Categoría, ROUND(AVG(margen_bruto), 1) AS Margen
+    FROM inventario WHERE {where}
+    GROUP BY categoria ORDER BY Margen DESC
+""")
+
+col1, col2 = st.columns(2)
+with col1:
+    st.plotly_chart(
+        treemap(df_cat, path=["Categoría"], valores="Valor", titulo="Valor de Inventario por Categoría"),
+        use_container_width=True,
+    )
+with col2:
+    st.plotly_chart(
+        barras(df_margen, x="Categoría", y="Margen", titulo="Margen Bruto Promedio % por Categoría"),
+        use_container_width=True,
+    )
+
+# ── Gráficos fila 2: Distribución por estado + Cobertura ─────────────────────
+
+df_estado = db.query(f"""
+    SELECT estado AS Estado, COUNT(*) AS Productos
+    FROM inventario WHERE {where}
+    GROUP BY estado
+""")
+
+df_cob = db.query(f"""
+    SELECT nombre_producto AS Producto, ROUND(cobertura, 2) AS Cobertura
+    FROM inventario WHERE {where} AND estado != 'descontinuado'
+    ORDER BY cobertura ASC LIMIT 10
+""")
+
+col1, col2 = st.columns(2)
+with col1:
+    st.plotly_chart(
+        pie(df_estado, nombres="Estado", valores="Productos", titulo="Distribución por Estado"),
+        use_container_width=True,
+    )
+with col2:
+    st.plotly_chart(
+        barras(df_cob, x="Producto", y="Cobertura", titulo="Cobertura de Stock (menor = más urgente)"),
+        use_container_width=True,
+    )
+
+# ── Tabla de alertas ──────────────────────────────────────────────────────────
+
+st.subheader("Productos bajo Stock Mínimo")
+df_quiebre = db.query(f"""
+    SELECT
+        id_producto         AS SKU,
+        nombre_producto     AS Producto,
+        categoria           AS Categoría,
+        bodega              AS Bodega,
+        stock_actual        AS Stock,
+        stock_minimo        AS Mínimo,
+        ROUND(cobertura, 2) AS Cobertura
+    FROM inventario
+    WHERE bajo_minimo = true AND {where}
+    ORDER BY cobertura ASC
+""")
+
+if df_quiebre.is_empty():
+    st.success("Sin alertas de quiebre para los filtros seleccionados.")
+else:
+    st.dataframe(df_quiebre.to_pandas(), use_container_width=True)
+
+# ── Tabla completa ─────────────────────────────────────────────────────────────
+
+with st.expander("Ver todos los productos"):
+    df_all = db.query(f"""
+        SELECT id_producto AS SKU, nombre_producto AS Producto,
+               categoria AS Categoría, bodega AS Bodega,
+               stock_actual AS Stock, stock_minimo AS Mínimo,
+               estado AS Estado,
+               ROUND(margen_bruto, 1) AS "Margen %",
+               ROUND(cobertura, 2)    AS Cobertura
+        FROM inventario WHERE {where}
+        ORDER BY categoria, nombre_producto
     """)
-    if len(df) == 0:
-        return '<div class="table-section"><h3>Alertas de Quiebre de Stock</h3><p style="color:#22c55e;padding:12px">Sin alertas — todos los productos sobre el stock mínimo.</p></div>'
-    return _tabla(df, "Alertas de Quiebre de Stock")
-
-
-def _seccion_por_categoria() -> str:
-    df = db.query("""
-        SELECT
-            categoria                       AS Categoría,
-            COUNT(*)                        AS Productos,
-            SUM(stock_actual)               AS Unidades,
-            SUM(valor_stock)                AS Valor,
-            ROUND(AVG(margen_bruto), 1)     AS "Margen %"
-        FROM inventario
-        WHERE estado != 'descontinuado'
-        GROUP BY categoria
-        ORDER BY Valor DESC
-    """).with_columns(
-        pl.col("Valor").map_elements(clp, return_dtype=pl.Utf8)
-    )
-    return _tabla(df, "Inventario por Categoría")
-
-
-def _seccion_margen() -> str:
-    df = db.query("""
-        SELECT
-            nombre_producto             AS Producto,
-            categoria                   AS Categoría,
-            precio_costo                AS Costo,
-            precio_venta                AS Venta,
-            ROUND(margen_bruto, 1)      AS "Margen %"
-        FROM inventario
-        WHERE estado = 'activo'
-        ORDER BY margen_bruto DESC
-    """).with_columns([
-        pl.col("Costo").map_elements(clp, return_dtype=pl.Utf8),
-        pl.col("Venta").map_elements(clp, return_dtype=pl.Utf8),
-    ])
-    return _tabla(df, "Margen Bruto por Producto")
-
-
-def run():
-    secciones = [
-        _seccion_kpis(),
-        _seccion_quiebre(),
-        _seccion_por_categoria(),
-        _seccion_margen(),
-    ]
-    html = generar_html(
-        secciones=secciones,
-        titulo="Reporte de Inventario",
-        subtitulo="Cliente Demo S.A. · MalayAI Arnés Analítico · Agosto 2026",
-    )
-    OUTPUT.write_text(html, encoding="utf-8")
-    print(f"  Reporte generado: {OUTPUT}")
-
-
-if __name__ == "__main__":
-    run()
+    st.dataframe(df_all.to_pandas(), use_container_width=True)

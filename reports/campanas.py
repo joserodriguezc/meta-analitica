@@ -1,141 +1,164 @@
 """
-Reporte de campañas — genera reports/campanas.html con datos pre-computados desde DuckDB.
-Basado en los KPIs de memoria/metricas/campanas.md.
+Reporte interactivo de campañas — Streamlit + Plotly.
+KPIs y gráficos basados en memoria/metricas/campanas.md.
 """
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import streamlit as st
 import polars as pl
 from core_agent.skills import duckdb_client as db
-from core_agent.skills.report_builder import (
-    clp, variacion, _kpi_card, _tabla, generar_html
+from core_agent.skills.chart_builder import (
+    sidebar_logo, barras, scatter, pie, kpi
 )
 
-OUTPUT = Path(__file__).parent / "campanas.html"
+st.set_page_config(
+    page_title="Campañas · MalayAI",
+    page_icon="📣",
+    layout="wide",
+)
 
-_ESTADO_BADGE = {
-    "activa":     '<span style="color:#22c55e;font-weight:600">● activa</span>',
-    "finalizada": '<span style="color:#94a3b8">◆ finalizada</span>',
-    "futura":     '<span style="color:#60a5fa">◇ futura</span>',
-}
+# ── Sidebar ────────────────────────────────────────────────────────────────────
 
+sidebar_logo()
+st.sidebar.title("Filtros")
 
-def _seccion_kpis() -> str:
-    r = db.query("""
-        SELECT
-            SUM(presupuesto)                                            AS presupuesto_total,
-            SUM(gasto_real)                                             AS gasto_total,
-            SUM(ingresos_atribuidos)                                    AS ingresos_total,
-            ROUND(SUM(ingresos_atribuidos) / NULLIF(SUM(gasto_real),0), 2) AS roas_global,
-            COUNT(*)                                                    AS total_campanas,
-            COUNT(*) FILTER (WHERE estado = 'activa')                   AS activas
-        FROM campanas
-    """).to_dicts()[0]
+canales = db.query("SELECT DISTINCT canal FROM campanas ORDER BY canal").to_series().to_list()
+sel_canales = st.sidebar.multiselect("Canal", canales, default=canales)
 
-    roas_str = f'{r["roas_global"]}x' if r["roas_global"] else "—"
-    delta_activas = f'<span style="color:#22c55e">{r["activas"]} activa(s) ahora</span>' if r["activas"] else ""
+estados = db.query("SELECT DISTINCT estado FROM campanas ORDER BY estado").to_series().to_list()
+sel_estados = st.sidebar.multiselect("Estado", estados, default=estados)
 
-    cards = "".join([
-        _kpi_card("Presupuesto Total", clp(r["presupuesto_total"])),
-        _kpi_card("Gasto Real", clp(r["gasto_total"])),
-        _kpi_card("Ingresos Atribuidos", clp(r["ingresos_total"])),
-        _kpi_card("ROAS Global", roas_str),
-        _kpi_card("Campañas", str(r["total_campanas"]), delta_activas),
-    ])
-    return f'<h3>Resumen General de Campañas</h3><div class="kpi-row">{cards}</div>'
+if not sel_canales or not sel_estados:
+    st.warning("Selecciona al menos un valor en cada filtro.")
+    st.stop()
 
+canales_sql = ", ".join(f"'{c}'" for c in sel_canales)
+estados_sql = ", ".join(f"'{e}'" for e in sel_estados)
+where = f"canal IN ({canales_sql}) AND estado IN ({estados_sql})"
 
-def _seccion_por_canal() -> str:
-    df = db.query("""
-        SELECT
-            canal                                                                   AS Canal,
-            COUNT(*)                                                                AS Campañas,
-            SUM(impresiones)                                                        AS Impresiones,
-            SUM(clicks)                                                             AS Clicks,
-            ROUND(SUM(clicks) * 100.0 / NULLIF(SUM(impresiones), 0), 2)            AS "CTR %",
-            SUM(conversiones)                                                       AS Conversiones,
-            SUM(gasto_real)                                                         AS Gasto,
-            SUM(ingresos_atribuidos)                                                AS Ingresos,
-            ROUND(SUM(ingresos_atribuidos) / NULLIF(SUM(gasto_real), 0), 2)        AS ROAS
-        FROM campanas
-        GROUP BY canal
-        ORDER BY Ingresos DESC
-    """).with_columns([
-        pl.col("Gasto").map_elements(clp, return_dtype=pl.Utf8),
-        pl.col("Ingresos").map_elements(clp, return_dtype=pl.Utf8),
-    ])
-    return _tabla(df, "Performance por Canal")
+# ── Título ────────────────────────────────────────────────────────────────────
 
+st.title("Reporte de Campañas")
+st.caption("Cliente Demo S.A. · MalayAI Arnés Analítico")
+st.divider()
 
-def _seccion_campanas() -> str:
-    df = db.query("""
-        SELECT
-            id_campana                              AS ID,
-            nombre_campana                          AS Campaña,
-            canal                                   AS Canal,
-            estado                                  AS Estado,
-            CAST(fecha_inicio AS VARCHAR)           AS Inicio,
-            CAST(fecha_fin AS VARCHAR)              AS Fin,
-            duracion_dias                           AS Días,
-            gasto_real                              AS Gasto,
-            ingresos_atribuidos                     AS Ingresos,
-            ROUND(ejecucion_presupuesto, 1)         AS "Ejec %",
-            ROUND(roas, 2)                          AS ROAS,
-            ROUND(ctr, 2)                           AS "CTR %"
-        FROM campanas
-        ORDER BY fecha_inicio DESC
-    """).with_columns([
-        pl.col("Estado").map_elements(
-            lambda e: _ESTADO_BADGE.get(e, e), return_dtype=pl.Utf8
-        ),
-        pl.col("Gasto").map_elements(clp, return_dtype=pl.Utf8),
-        pl.col("Ingresos").map_elements(clp, return_dtype=pl.Utf8),
-    ])
-    return _tabla(df, "Todas las Campañas")
+# ── KPIs ──────────────────────────────────────────────────────────────────────
 
+def _clp(v):
+    return f"${v:,.0f}".replace(",", ".")
 
-def _seccion_top_roas() -> str:
-    df = db.query("""
-        SELECT
-            nombre_campana              AS Campaña,
-            canal                       AS Canal,
-            gasto_real                  AS Gasto,
-            ingresos_atribuidos         AS Ingresos,
-            ROUND(roas, 2)              AS ROAS,
-            ROUND(roi, 1)               AS "ROI %",
-            ROUND(cpa, 0)               AS CPA,
-            ROUND(tasa_conversion, 2)   AS "Conv %"
-        FROM campanas
-        WHERE gasto_real > 0
-        ORDER BY roas DESC NULLS LAST
-        LIMIT 5
-    """).with_columns([
-        pl.col("Gasto").map_elements(clp, return_dtype=pl.Utf8),
-        pl.col("Ingresos").map_elements(clp, return_dtype=pl.Utf8),
-        pl.col("CPA").map_elements(
-            lambda v: clp(v) if v is not None else "—", return_dtype=pl.Utf8
-        ),
-    ])
-    return _tabla(df, "Top 5 Campañas por ROAS")
+totales = db.query(f"""
+    SELECT
+        COUNT(*)                            AS campanas,
+        SUM(presupuesto)                    AS presupuesto_total,
+        SUM(gasto_real)                     AS gasto_total,
+        SUM(conversiones)                   AS conversiones,
+        SUM(ingresos_atribuidos)            AS ingresos,
+        ROUND(AVG(CASE WHEN roas IS NOT NULL THEN roas END), 2) AS roas_promedio,
+        ROUND(AVG(CASE WHEN roi  IS NOT NULL THEN roi  END), 1) AS roi_promedio,
+        ROUND(AVG(CASE WHEN ctr  IS NOT NULL THEN ctr  END), 2) AS ctr_promedio
+    FROM campanas WHERE {where}
+""").to_dicts()[0]
 
+c1, c2, c3, c4 = st.columns(4)
+with c1: kpi("Inversión Total", _clp(totales["gasto_total"] or 0))
+with c2: kpi("Ingresos Atribuidos", _clp(totales["ingresos"] or 0))
+with c3: kpi("ROAS Promedio", f"{totales['roas_promedio'] or 0:.2f}x")
+with c4: kpi("Conversiones", str(int(totales["conversiones"] or 0)))
 
-def run():
-    secciones = [
-        _seccion_kpis(),
-        _seccion_por_canal(),
-        _seccion_campanas(),
-        _seccion_top_roas(),
-    ]
-    html = generar_html(
-        secciones=secciones,
-        titulo="Reporte de Campañas de Marketing",
-        subtitulo="Cliente Demo S.A. · MalayAI Arnés Analítico · Junio 2026",
+c1, c2, c3, c4 = st.columns(4)
+with c1: kpi("ROI Promedio", f"{totales['roi_promedio'] or 0:.1f}%")
+with c2: kpi("CTR Promedio", f"{totales['ctr_promedio'] or 0:.2f}%")
+with c3: kpi("Campañas", str(int(totales["campanas"] or 0)))
+with c4: kpi("Presupuesto Total", _clp(totales["presupuesto_total"] or 0))
+
+st.divider()
+
+# ── Gráficos fila 1: ROAS por canal + Scatter inversión vs ROAS ───────────────
+
+df_canal = db.query(f"""
+    SELECT
+        canal AS Canal,
+        ROUND(AVG(roas), 2)             AS ROAS,
+        SUM(gasto_real)                 AS Inversión,
+        SUM(conversiones)               AS Conversiones
+    FROM campanas WHERE {where} AND roas IS NOT NULL
+    GROUP BY canal ORDER BY ROAS DESC
+""")
+
+df_scatter = db.query(f"""
+    SELECT
+        nombre_campana  AS Campaña,
+        canal           AS Canal,
+        gasto_real      AS Inversión,
+        roas            AS ROAS,
+        conversiones    AS Conversiones
+    FROM campanas WHERE {where} AND roas IS NOT NULL
+""")
+
+col1, col2 = st.columns(2)
+with col1:
+    st.plotly_chart(
+        barras(df_canal, x="Canal", y="ROAS", titulo="ROAS Promedio por Canal"),
+        use_container_width=True,
     )
-    OUTPUT.write_text(html, encoding="utf-8")
-    print(f"  Reporte generado: {OUTPUT}")
+with col2:
+    st.plotly_chart(
+        scatter(
+            df_scatter, x="Inversión", y="ROAS",
+            titulo="Inversión vs ROAS por Campaña",
+            size="Conversiones", color="Canal",
+            hover=["Campaña", "Conversiones"],
+        ),
+        use_container_width=True,
+    )
 
+# ── Gráficos fila 2: ROI por campaña + Donut por canal ────────────────────────
 
-if __name__ == "__main__":
-    run()
+df_roi = db.query(f"""
+    SELECT nombre_campana AS Campaña, ROUND(roi, 1) AS ROI
+    FROM campanas WHERE {where} AND roi IS NOT NULL
+    ORDER BY ROI DESC
+""")
+
+df_pie_canal = db.query(f"""
+    SELECT canal AS Canal, SUM(ingresos_atribuidos) AS Ingresos
+    FROM campanas WHERE {where}
+    GROUP BY canal ORDER BY Ingresos DESC
+""")
+
+col1, col2 = st.columns(2)
+with col1:
+    st.plotly_chart(
+        barras(df_roi, x="Campaña", y="ROI", titulo="ROI % por Campaña"),
+        use_container_width=True,
+    )
+with col2:
+    st.plotly_chart(
+        pie(df_pie_canal, nombres="Canal", valores="Ingresos", titulo="Ingresos Atribuidos por Canal"),
+        use_container_width=True,
+    )
+
+# ── Tabla completa ─────────────────────────────────────────────────────────────
+
+with st.expander("Ver tabla completa de campañas"):
+    df_all = db.query(f"""
+        SELECT
+            id_campana      AS ID,
+            nombre_campana  AS Campaña,
+            canal           AS Canal,
+            estado          AS Estado,
+            presupuesto     AS Presupuesto,
+            gasto_real      AS Gasto,
+            ROUND(ejecucion_presupuesto, 1) AS "Ejec %",
+            conversiones    AS Conv,
+            ROUND(roas, 2)  AS ROAS,
+            ROUND(roi, 1)   AS "ROI %",
+            ROUND(ctr, 2)   AS "CTR %"
+        FROM campanas WHERE {where}
+        ORDER BY ROAS DESC NULLS LAST
+    """)
+    st.dataframe(df_all.to_pandas(), use_container_width=True)
