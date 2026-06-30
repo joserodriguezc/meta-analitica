@@ -1,0 +1,10 @@
+El cliente mandó <nombre_archivo.csv> con columnas <col1, col2, col3, ...>.
+
+Crea el dominio de <nombre_dominio> siguiendo las reglas del harness:
+1. Lee CLAUDE.md y memoria/index.md antes de escribir cualquier código
+2. Crea memoria/metricas/<dominio>.md con el esquema, KPIs y reglas de negocio
+3. Crea pipelines/etl_<dominio>.py siguiendo la receta de core_agent/tasks/crear_etl.md
+4. Agrega el schema_<dominio> en pipelines/calidad.py siguiendo la receta de core_agent/tasks/validar_calidad.md
+5. Crea reports/<dominio>.py siguiendo la receta de core_agent/tasks/crear_reporte.md
+6. Actualiza memoria/index.md con el nuevo dominio
+7. Verifica con: uv run main.py etl <dominio> --archivo <nombre_archivo.csv> && uv run main.py test <dominio> && uv run main.py deploy <dominio>

@@ -9,6 +9,8 @@ El agente debe leerlo antes de ejecutar cualquier tarea analítica.
 |---|---|---|
 | [metricas/ventas.md](metricas/ventas.md) | Ventas | KPIs de ventas: ingresos, ticket promedio, unidades |
 | [metricas/inventario.md](metricas/inventario.md) | Inventario | Stock, valor, margen bruto, alertas de quiebre |
+| [metricas/campanas.md](metricas/campanas.md) | Campañas | ROAS, ROI, CTR, CPC, CPA, tasa de conversión |
+| [metricas/devoluciones.md](metricas/devoluciones.md) | Devoluciones | Tasa de aprobación, reembolso total/promedio, motivos, canales |
 
 ## Clientes Activos
 

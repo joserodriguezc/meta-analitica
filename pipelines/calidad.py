@@ -124,12 +124,50 @@ schema_campanas = pa.DataFrameSchema(
     name="campanas",
 )
 
+# ── DEVOLUCIONES ──────────────────────────────────────────────────────────────
+
+MOTIVOS_DEVOLUCION = ["cambio_opinion", "dano_envio", "defecto", "no_esperado", "talla_incorrecta"]
+ESTADOS_DEVOLUCION = ["aprobada", "rechazada", "pendiente"]
+CANALES_DEVOLUCION = ["courier", "online", "tienda"]
+
+schema_devoluciones = pa.DataFrameSchema(
+    columns={
+        "id_devolucion": pa.Column(str, nullable=False, unique=True),
+        "id_orden": pa.Column(str, nullable=False),
+        "fecha_devolucion": pa.Column(
+            pl.Date, nullable=False,
+            checks=pa.Check(lambda x: x.year >= 2020, element_wise=True,
+                            error="Fecha anterior al año 2020"),
+        ),
+        "id_producto": pa.Column(str, nullable=False),
+        "nombre_producto": pa.Column(str, nullable=False),
+        "categoria": pa.Column(str, nullable=False),
+        "cantidad_devuelta": pa.Column(pl.Int32, nullable=False,
+                                       checks=pa.Check.greater_than(0, error="Cantidad devuelta debe ser mayor a 0")),
+        "precio_unitario": pa.Column(pl.Float64, nullable=False,
+                                     checks=pa.Check.greater_than(0, error="Precio unitario debe ser mayor a 0")),
+        "motivo": pa.Column(str, nullable=False,
+                            checks=pa.Check.isin(MOTIVOS_DEVOLUCION, error=f"Motivo debe ser uno de: {MOTIVOS_DEVOLUCION}")),
+        "estado": pa.Column(str, nullable=False,
+                            checks=pa.Check.isin(ESTADOS_DEVOLUCION, error=f"Estado debe ser uno de: {ESTADOS_DEVOLUCION}")),
+        "canal_devolucion": pa.Column(str, nullable=False,
+                                      checks=pa.Check.isin(CANALES_DEVOLUCION, error=f"Canal debe ser uno de: {CANALES_DEVOLUCION}")),
+        "reembolso": pa.Column(pl.Float64, nullable=False,
+                               checks=pa.Check.greater_than_or_equal_to(0, error="Reembolso no puede ser negativo")),
+        "valor_devolucion": pa.Column(pl.Float64, nullable=False,
+                                      checks=pa.Check.greater_than(0, error="Valor de devolución debe ser positivo")),
+        "mes": pa.Column(pl.Date, nullable=False),
+    },
+    name="devoluciones",
+)
+
 # ── MOTOR ─────────────────────────────────────────────────────────────────────
 
 SCHEMAS = {
     "ventas": schema_ventas,
     "inventario": schema_inventario,
     "campanas": schema_campanas,
+    "devoluciones": schema_devoluciones,
 }
 
 

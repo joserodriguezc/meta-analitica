@@ -68,6 +68,56 @@ Registro cronológico de decisiones técnicas y de negocio relevantes para el pr
 
 ---
 
+## 2026-06-29 — Sprint 6: Dominio de Campañas de Marketing
+
+**Decisión:** Crear el dominio `campanas` completo: ETL, validación Pandera y reporte HTML.
+
+**Contexto:** El cliente envió un archivo con columnas de campañas publicitarias (presupuesto, gasto, impresiones, clicks, conversiones, ingresos). Se modelaron 9 métricas derivadas: `estado`, `duracion_dias`, `ejecucion_presupuesto`, `ctr`, `tasa_conversion`, `cpc`, `cpa`, `roas`, `roi`.
+
+**Canales válidos:** `email`, `redes_sociales`, `display`, `search`, `video`.
+
+**Métricas clave calculadas en ETL:**
+- ROAS = `ingresos_atribuidos / gasto_real` (nullable cuando gasto = 0)
+- `estado` derivado de fechas vs. `date.today()` al momento de la carga
+
+**Archivos creados:**
+- `data/raw/campanas_demo.csv` — 8 campañas de muestra (5 finalizadas, 1 activa, 1 futura, 1 activa parcial)
+- `memoria/metricas/campanas.md` — definiciones de negocio
+- `pipelines/etl_campanas.py` — ETL con transformaciones completas
+- `pipelines/calidad.py` — agregado `schema_campanas` con 20 columnas validadas
+- `reports/campanas.py` — 4 secciones: KPIs, por canal, tabla completa, top ROAS
+
+---
+
+## 2026-06-29 — Sprint 7: Dominio de Devoluciones
+
+**Decisión:** Crear el dominio `devoluciones` completo: ETL, validación Pandera y reporte HTML.
+
+**Contexto:** El cliente envió `devoluciones_q3_2026.csv` con 12 columnas: id_devolucion, id_orden, fecha_devolucion, id_producto, nombre_producto, categoria, cantidad_devuelta, precio_unitario, motivo, estado, canal_devolucion, reembolso.
+
+**Columnas derivadas calculadas en ETL:**
+- `valor_devolucion = cantidad_devuelta * precio_unitario`
+- `mes` — truncado al primer día del mes de `fecha_devolucion`
+
+**Valores controlados:**
+- Motivos: `defectuoso`, `incorrecto`, `no_satisface`, `talla_incorrecta`, `dano_envio`, `duplicado`, `otro`
+- Estados: `aprobada`, `rechazada`, `pendiente`
+- Canales: `online`, `tienda`, `marketplace`
+
+**KPIs principales:**
+- Tasa de aprobación = aprobadas / total * 100
+- Reembolso total (solo aprobadas)
+- Reembolso promedio (solo aprobadas)
+- Evolución mensual de solicitudes
+
+**Archivos creados:**
+- `memoria/metricas/devoluciones.md` — definiciones de negocio
+- `pipelines/etl_devoluciones.py` — ETL con 2 columnas derivadas
+- `pipelines/calidad.py` — agregado `schema_devoluciones` con 14 columnas validadas
+- `reports/devoluciones.py` — 6 secciones: KPIs, por motivo, por categoría, por canal, mensual, detalle
+
+---
+
 ## 2026-06-29 — Sprint 5: Capa de Reportes
 
 **Decisión:** Reemplazar `marimo export html` por generación directa de HTML estático desde Python.
