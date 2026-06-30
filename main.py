@@ -71,30 +71,32 @@ def test(
 
 @app.command()
 def deploy(
-    reporte: Optional[str] = typer.Argument(None, help="Nombre del reporte (ej: ventas). Si se omite, despliega todos.")
+    reporte: Optional[str] = typer.Argument(None, help="Nombre del reporte (ej: ventas). Si se omite, levanta la app unificada."),
+    puerto: int = typer.Option(8501, "--puerto", "-p", help="Puerto para el servidor Streamlit."),
 ):
-    """Genera reportes HTML estáticos pre-computados desde DuckDB."""
-    reports_dir = Path("reports")
-    targets = (
-        [reports_dir / f"{reporte}.py"]
-        if reporte
-        else sorted(reports_dir.glob("*.py"))
-    )
+    """Levanta el reporte Streamlit interactivo en el browser."""
+    import subprocess, sys
 
-    if not targets:
-        typer.echo("No se encontraron reportes para desplegar.")
-        raise typer.Exit(1)
-
-    for path in targets:
+    if reporte:
+        path = Path("reports") / f"{reporte}.py"
         if not path.exists():
             typer.echo(f"Reporte no encontrado: {path}", err=True)
             raise typer.Exit(1)
+        target = str(path)
+        typer.echo(f"Levantando reporte '{reporte}' en http://localhost:{puerto} ...")
+    else:
+        app_path = Path("app.py")
+        if not app_path.exists():
+            typer.echo("No se encontró app.py. Especifica un reporte: uv run main.py deploy ventas", err=True)
+            raise typer.Exit(1)
+        target = "app.py"
+        typer.echo(f"Levantando app unificada en http://localhost:{puerto} ...")
 
-        typer.echo(f"Generando {path.stem}.html...")
-        module = _load_module(path)
-        module.run()
-
-    typer.echo("Deploy completado.")
+    subprocess.run([
+        sys.executable, "-m", "streamlit", "run", target,
+        "--server.port", str(puerto),
+        "--server.headless", "false",
+    ])
 
 
 @app.command()
