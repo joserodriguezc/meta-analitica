@@ -5,6 +5,13 @@ Crea el dominio de <nombre_dominio> siguiendo las reglas del harness:
 2. Crea memoria/metricas/<dominio>.md con el esquema, KPIs y reglas de negocio
 3. Crea pipelines/etl_<dominio>.py siguiendo la receta de core_agent/tasks/crear_etl.md
 4. Agrega el schema_<dominio> en pipelines/calidad.py siguiendo la receta de core_agent/tasks/validar_calidad.md
-5. Crea reports/<dominio>.py siguiendo la receta de core_agent/tasks/crear_reporte.md
-6. Actualiza memoria/index.md con el nuevo dominio
-7. Verifica con: uv run main.py etl <dominio> --archivo <nombre_archivo.csv> && uv run main.py test <dominio> && uv run main.py deploy <dominio>
+5. Crea reports/<dominio>.py como app Streamlit usando core_agent/skills/chart_builder.py:
+   - Llama inject_css() y sidebar_logo() al inicio
+   - Usa page_header("<Título>", "<subtítulo>") como cabecera
+   - Filtros en st.sidebar con st.multiselect
+   - KPIs con kpi(label, valor, delta) en columnas st.columns
+   - Gráficos con barras(), linea(), pie(), scatter(), treemap() o heatmap()
+   - Tabla detalle en st.expander al final
+6. Agrega la nueva página en app.py con st.Page y st.page_link
+7. Actualiza memoria/index.md con el nuevo dominio
+8. Verifica con: uv run main.py etl <dominio> --archivo <nombre_archivo.csv> && uv run main.py test <dominio> && uv run main.py deploy <dominio>
