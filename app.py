@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 import streamlit as st
-from core_agent.skills.chart_builder import LOGO_PATH, inject_css
+from core_agent.skills.chart_builder import inject_css, _render_sidebar_brand
 
 st.set_page_config(
     page_title="MalayAI Analytics",
@@ -17,29 +17,17 @@ st.set_page_config(
 )
 
 inject_css()
+_render_sidebar_brand()
 
-# ── Logo y branding en sidebar ─────────────────────────────────────────────────
-
-with st.sidebar:
-    if LOGO_PATH.exists():
-        st.image(str(LOGO_PATH), use_container_width=True)
-    st.markdown(
-        '<p style="text-align:center;color:#64748B;font-size:0.72rem;'
-        'letter-spacing:0.5px;text-transform:uppercase;margin-top:4px;">'
-        "Arnés Analítico</p>",
-        unsafe_allow_html=True,
-    )
-    st.divider()
-
-# Marca logo y CSS como ya renderizados para que los reportes no los dupliquen
+# Marca brand y CSS como ya renderizados para que los reportes no los dupliquen
 st.session_state["_logo_rendered"] = True
 
 # ── Navegación ─────────────────────────────────────────────────────────────────
 
-ventas       = st.Page("reports/ventas.py",       title="Ventas",        icon="📈")
-inventario   = st.Page("reports/inventario.py",   title="Inventario",    icon="📦")
-campanas     = st.Page("reports/campanas.py",      title="Campañas",      icon="📣")
-devoluciones = st.Page("reports/devoluciones.py", title="Devoluciones",  icon="↩️")
+ventas       = st.Page("reports/ventas.py",       title="Ventas",       icon="📈")
+inventario   = st.Page("reports/inventario.py",   title="Inventario",   icon="📦")
+campanas     = st.Page("reports/campanas.py",      title="Campañas",     icon="📣")
+devoluciones = st.Page("reports/devoluciones.py", title="Devoluciones", icon="↩️")
 
 pg = st.navigation(
     {"Analítica": [ventas, inventario, campanas, devoluciones]},
