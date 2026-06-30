@@ -11,7 +11,7 @@ import streamlit as st
 import polars as pl
 from core_agent.skills import duckdb_client as db
 from core_agent.skills.chart_builder import (
-    sidebar_logo, barras, treemap, pie, kpi
+    inject_css, sidebar_logo, page_header, barras, treemap, pie, kpi
 )
 
 st.set_page_config(
@@ -22,6 +22,7 @@ st.set_page_config(
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 
+inject_css()
 sidebar_logo()
 st.sidebar.title("Filtros")
 
@@ -50,8 +51,7 @@ if mostrar_quiebre:
 
 # ── Título ────────────────────────────────────────────────────────────────────
 
-st.title("Reporte de Inventario")
-st.caption("Cliente Demo S.A. · MalayAI Arnés Analítico")
+page_header("Reporte de Inventario", "Cliente Demo S.A. · MalayAI Arnés Analítico")
 st.divider()
 
 # ── KPIs ──────────────────────────────────────────────────────────────────────

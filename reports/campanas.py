@@ -11,7 +11,7 @@ import streamlit as st
 import polars as pl
 from core_agent.skills import duckdb_client as db
 from core_agent.skills.chart_builder import (
-    sidebar_logo, barras, scatter, pie, kpi
+    inject_css, sidebar_logo, page_header, barras, scatter, pie, kpi
 )
 
 st.set_page_config(
@@ -22,6 +22,7 @@ st.set_page_config(
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 
+inject_css()
 sidebar_logo()
 st.sidebar.title("Filtros")
 
@@ -41,8 +42,7 @@ where = f"canal IN ({canales_sql}) AND estado IN ({estados_sql})"
 
 # ── Título ────────────────────────────────────────────────────────────────────
 
-st.title("Reporte de Campañas")
-st.caption("Cliente Demo S.A. · MalayAI Arnés Analítico")
+page_header("Reporte de Campañas", "Cliente Demo S.A. · MalayAI Arnés Analítico")
 st.divider()
 
 # ── KPIs ──────────────────────────────────────────────────────────────────────
