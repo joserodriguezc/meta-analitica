@@ -17,7 +17,10 @@ TEXTO = "#FAFAFA"
 
 
 def sidebar_logo():
-    """Muestra el logo MalayAI Lab en el sidebar."""
+    """Muestra el logo en el sidebar solo cuando el reporte corre standalone."""
+    # En la app unificada (app.py) el logo ya está renderizado — no duplicar.
+    if st.session_state.get("_logo_rendered"):
+        return
     if LOGO_PATH.exists():
         st.sidebar.image(str(LOGO_PATH), use_container_width=True)
     st.sidebar.markdown("---")
