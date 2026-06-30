@@ -115,6 +115,31 @@ details {
 [data-testid="metric-container"] {
     display: none !important;
 }
+
+/* ── KPI cards propias ───────────────── */
+.malayai-kpi {
+    background: linear-gradient(135deg, #0D1525 0%, #101828 100%);
+    border: 1px solid rgba(59,130,246,0.18);
+    border-radius: 14px;
+    padding: 1.1rem 1.3rem;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.malayai-kpi:hover {
+    border-color: rgba(0,212,255,0.4);
+    box-shadow: 0 4px 24px rgba(0,212,255,0.1);
+    transform: translateY(-2px);
+}
+.malayai-kpi::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 70px; height: 70px;
+    background: radial-gradient(circle at top right, rgba(59,130,246,0.07), transparent 70%);
+    pointer-events: none;
+}
 </style>
 """
 
@@ -203,56 +228,29 @@ def kpi(label: str, valor: str, delta: str = "", icon: str = "") -> None:
         arrow  = "▲" if is_pos else "▼"
         clean  = delta.lstrip("+-").strip()
         delta_html = (
-            f'<div style="display:flex;align-items:center;gap:4px;margin-top:6px;">'
-            f'<span style="color:{color};font-size:0.72rem;font-weight:700;">'
-            f'{arrow} {clean}</span>'
-            f'<span style="color:#334155;font-size:0.68rem;">vs anterior</span>'
-            f"</div>"
+            '<div style="display:flex;align-items:center;gap:4px;margin-top:6px;">'
+            f'<span style="color:{color};font-size:0.72rem;font-weight:700;">{arrow} {clean}</span>'
+            '<span style="color:#334155;font-size:0.68rem;">vs anterior</span>'
+            '</div>'
         )
     icon_html = (
-        f'<div style="font-size:1.6rem;opacity:0.55;flex-shrink:0;'
-        f'align-self:flex-start;">{icon}</div>'
+        f'<div style="font-size:1.6rem;opacity:0.55;flex-shrink:0;align-self:flex-start;">{icon}</div>'
         if icon else ""
     )
-    st.markdown(
-        f"""
-        <div style="
-            background:linear-gradient(135deg,#0D1525 0%,#101828 100%);
-            border:1px solid rgba(59,130,246,0.18);
-            border-radius:14px;
-            padding:1.1rem 1.3rem;
-            position:relative;overflow:hidden;
-            transition:border-color 0.2s,box-shadow 0.2s;
-            height:100%;
-        "
-        onmouseover="this.style.borderColor='rgba(0,212,255,0.4)';
-                     this.style.boxShadow='0 4px 24px rgba(0,212,255,0.1)'"
-        onmouseout="this.style.borderColor='rgba(59,130,246,0.18)';
-                    this.style.boxShadow='none'">
-            <div style="position:absolute;top:0;right:0;width:70px;height:70px;
-                background:radial-gradient(circle at top right,
-                rgba(59,130,246,0.07),transparent 70%);pointer-events:none;"></div>
-            <div style="display:flex;justify-content:space-between;
-                        align-items:flex-start;gap:8px;">
-                <div style="flex:1;min-width:0;">
-                    <div style="color:#475569;font-size:0.63rem;font-weight:700;
-                        text-transform:uppercase;letter-spacing:0.8px;margin-bottom:7px;
-                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        {label}</div>
-                    <div style="color:#F0F9FF;font-size:1.5rem;font-weight:700;
-                        letter-spacing:-0.4px;line-height:1.1;
-                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                        {valor}</div>
-                    {delta_html}
-                </div>
-                {icon_html}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    inner = (
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
+        '<div style="flex:1;min-width:0;">'
+        f'<div style="color:#475569;font-size:0.63rem;font-weight:700;text-transform:uppercase;'
+        f'letter-spacing:0.8px;margin-bottom:7px;white-space:nowrap;overflow:hidden;'
+        f'text-overflow:ellipsis;">{label}</div>'
+        f'<div style="color:#F0F9FF;font-size:1.5rem;font-weight:700;letter-spacing:-0.4px;'
+        f'line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{valor}</div>'
+        f'{delta_html}'
+        '</div>'
+        f'{icon_html}'
+        '</div>'
     )
-    # Spacer para que las columnas tengan altura uniforme
-    st.markdown("<div style='margin-bottom:0.5rem'></div>", unsafe_allow_html=True)
+    st.markdown(f'<div class="malayai-kpi">{inner}</div>', unsafe_allow_html=True)
 
 
 # ── Plotly base ────────────────────────────────────────────────────────────────
