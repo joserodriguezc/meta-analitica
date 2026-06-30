@@ -79,11 +79,57 @@ schema_inventario = pa.DataFrameSchema(
     name="inventario",
 )
 
+# ── CAMPAÑAS ──────────────────────────────────────────────────────────────────
+
+CANALES_CAMPANAS = ["google", "meta", "tiktok", "email"]
+ESTADOS_CAMPANAS = ["activa", "finalizada", "futura"]
+
+schema_campanas = pa.DataFrameSchema(
+    columns={
+        "id_campana": pa.Column(str, nullable=False, unique=True),
+        "nombre_campana": pa.Column(str, nullable=False),
+        "canal": pa.Column(str, nullable=False,
+                           checks=pa.Check.isin(CANALES_CAMPANAS, error=f"Canal debe ser uno de: {CANALES_CAMPANAS}")),
+        "fecha_inicio": pa.Column(pl.Date, nullable=False),
+        "fecha_fin": pa.Column(pl.Date, nullable=False),
+        "presupuesto": pa.Column(pl.Float64, nullable=False,
+                                 checks=pa.Check.greater_than(0, error="Presupuesto debe ser mayor a 0")),
+        "gasto_real": pa.Column(pl.Float64, nullable=False,
+                                checks=pa.Check.greater_than_or_equal_to(0, error="Gasto real no puede ser negativo")),
+        "impresiones": pa.Column(pl.Int64, nullable=False,
+                                 checks=pa.Check.greater_than_or_equal_to(0, error="Impresiones no puede ser negativo")),
+        "clicks": pa.Column(pl.Int64, nullable=False,
+                            checks=pa.Check.greater_than_or_equal_to(0, error="Clicks no puede ser negativo")),
+        "conversiones": pa.Column(pl.Int64, nullable=False,
+                                  checks=pa.Check.greater_than_or_equal_to(0, error="Conversiones no puede ser negativo")),
+        "ingresos_atribuidos": pa.Column(pl.Float64, nullable=False,
+                                         checks=pa.Check.greater_than_or_equal_to(0, error="Ingresos atribuidos no puede ser negativo")),
+        "estado": pa.Column(str, nullable=False,
+                            checks=pa.Check.isin(ESTADOS_CAMPANAS, error=f"Estado debe ser uno de: {ESTADOS_CAMPANAS}")),
+        "duracion_dias": pa.Column(pl.Int32, nullable=False,
+                                   checks=pa.Check.greater_than_or_equal_to(1, error="Duración debe ser al menos 1 día")),
+        "ejecucion_presupuesto": pa.Column(pl.Float64, nullable=False),
+        "ctr": pa.Column(pl.Float64, nullable=True,
+                         checks=pa.Check.in_range(0, 100, error="CTR debe estar entre 0 y 100")),
+        "tasa_conversion": pa.Column(pl.Float64, nullable=True,
+                                     checks=pa.Check.in_range(0, 100, error="Tasa de conversión debe estar entre 0 y 100")),
+        "cpc": pa.Column(pl.Float64, nullable=True,
+                         checks=pa.Check.greater_than_or_equal_to(0, error="CPC no puede ser negativo")),
+        "cpa": pa.Column(pl.Float64, nullable=True,
+                         checks=pa.Check.greater_than_or_equal_to(0, error="CPA no puede ser negativo")),
+        "roas": pa.Column(pl.Float64, nullable=True,
+                          checks=pa.Check.greater_than_or_equal_to(0, error="ROAS no puede ser negativo")),
+        "roi": pa.Column(pl.Float64, nullable=True),
+    },
+    name="campanas",
+)
+
 # ── MOTOR ─────────────────────────────────────────────────────────────────────
 
 SCHEMAS = {
     "ventas": schema_ventas,
     "inventario": schema_inventario,
+    "campanas": schema_campanas,
 }
 
 
