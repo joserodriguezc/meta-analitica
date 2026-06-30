@@ -17,6 +17,17 @@ OUTPUT = Path(__file__).parent / "ventas.html"
 
 
 def _seccion_kpis() -> str:
+    # Totales acumulados (todos los períodos)
+    total = db.query("""
+        SELECT
+            SUM(ingreso_linea)                                      AS ingresos,
+            COUNT(DISTINCT id_orden)                                AS ordenes,
+            ROUND(SUM(ingreso_linea) / COUNT(DISTINCT id_orden), 0) AS ticket
+        FROM ventas
+        WHERE estado = 'completado'
+    """).to_dicts()[0]
+
+    # KPIs del último mes vs mes anterior
     mensual = db.query("""
         SELECT
             mes,
@@ -31,15 +42,26 @@ def _seccion_kpis() -> str:
     ult, ant = filas[-1], filas[-2] if len(filas) >= 2 else None
     mes_label = ult["mes"].strftime("%B %Y").capitalize()
 
-    cards = "".join([
-        _kpi_card("Ingresos Totales", clp(ult["ingresos"]),
+    cards_total = "".join([
+        _kpi_card("Ingresos Acumulados", clp(total["ingresos"])),
+        _kpi_card("Ticket Promedio Global", clp(total["ticket"])),
+        _kpi_card("Órdenes Totales", str(total["ordenes"])),
+    ])
+
+    cards_mes = "".join([
+        _kpi_card("Ingresos del Mes", clp(ult["ingresos"]),
                   variacion(ult["ingresos"], ant["ingresos"] if ant else 0)),
         _kpi_card("Ticket Promedio", clp(ult["ticket"]),
                   variacion(ult["ticket"], ant["ticket"] if ant else 0)),
-        _kpi_card("Órdenes", str(ult["ordenes"]),
+        _kpi_card("Órdenes del Mes", str(ult["ordenes"]),
                   variacion(ult["ordenes"], ant["ordenes"] if ant else 0)),
     ])
-    return f'<h3>KPIs — {mes_label}</h3><div class="kpi-row">{cards}</div>'
+
+    return (
+        f'<h3>Total Acumulado</h3><div class="kpi-row">{cards_total}</div>'
+        f'<h3 style="margin-top:24px">Último Período — {mes_label}</h3>'
+        f'<div class="kpi-row">{cards_mes}</div>'
+    )
 
 
 def _seccion_mensual() -> str:
