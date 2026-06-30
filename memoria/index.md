@@ -8,6 +8,7 @@ El agente debe leerlo antes de ejecutar cualquier tarea analítica.
 | Archivo | Dominio | Descripción |
 |---|---|---|
 | [metricas/ventas.md](metricas/ventas.md) | Ventas | KPIs de ventas: ingresos, ticket promedio, unidades |
+| [metricas/inventario.md](metricas/inventario.md) | Inventario | Stock, valor, margen bruto, alertas de quiebre |
 
 ## Clientes Activos
 
