@@ -36,14 +36,13 @@ html, body, [class*="css"] {
 [data-testid="stSidebar"] span,
 [data-testid="stSidebar"] label { color: #94A3B8 !important; }
 
-/* Nav items — estilo referencia con borde activo izquierdo */
-[data-testid="stSidebarNavItems"] {
-    padding: 0 0.5rem !important;
-}
-[data-testid="stSidebarNavItems"] a {
-    border-radius: 8px !important;
-    padding: 0.55rem 0.85rem !important;
+/* Nav items — st.page_link estilo referencia */
+[data-testid="stPageLink"] {
     margin-bottom: 2px !important;
+}
+[data-testid="stPageLink"] a {
+    border-radius: 8px !important;
+    padding: 0.5rem 0.85rem !important;
     border-left: 3px solid transparent !important;
     color: #94A3B8 !important;
     font-size: 0.875rem !important;
@@ -52,15 +51,16 @@ html, body, [class*="css"] {
     display: flex !important;
     align-items: center !important;
     gap: 0.6rem !important;
+    text-decoration: none !important;
+    width: 100% !important;
 }
-[data-testid="stSidebarNavItems"] a:hover {
+[data-testid="stPageLink"] a:hover {
     background: rgba(59,130,246,0.08) !important;
     border-left-color: #3B82F6 !important;
     color: #E2E8F0 !important;
 }
-[data-testid="stSidebarNavItems"] [aria-current="page"],
-[data-testid="stSidebarNavItems"] a[aria-selected="true"] {
-    background: rgba(59,130,246,0.12) !important;
+[data-testid="stPageLink"] a[aria-current="page"] {
+    background: rgba(59,130,246,0.13) !important;
     border-left-color: #3B82F6 !important;
     color: #FFFFFF !important;
     font-weight: 600 !important;

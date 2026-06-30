@@ -17,21 +17,37 @@ st.set_page_config(
 )
 
 inject_css()
-_render_sidebar_brand()
 
-# Marca brand y CSS como ya renderizados para que los reportes no los dupliquen
-st.session_state["_logo_rendered"] = True
-
-# ── Navegación ─────────────────────────────────────────────────────────────────
+# ── Páginas ────────────────────────────────────────────────────────────────────
 
 ventas       = st.Page("reports/ventas.py",       title="Ventas",       icon="📈")
 inventario   = st.Page("reports/inventario.py",   title="Inventario",   icon="📦")
 campanas     = st.Page("reports/campanas.py",      title="Campañas",     icon="📣")
 devoluciones = st.Page("reports/devoluciones.py", title="Devoluciones", icon="↩️")
 
+# position="hidden" para controlar el orden del sidebar manualmente
 pg = st.navigation(
     {"Analítica": [ventas, inventario, campanas, devoluciones]},
-    position="sidebar",
+    position="hidden",
 )
+
+# ── Sidebar: logo → nav → (filtros añadidos por cada reporte) ─────────────────
+
+_render_sidebar_brand()
+
+with st.sidebar:
+    st.markdown(
+        '<p style="color:#475569;font-size:0.65rem;font-weight:700;'
+        'text-transform:uppercase;letter-spacing:0.8px;'
+        'padding:0 0.5rem;margin-bottom:4px;">Analítica</p>',
+        unsafe_allow_html=True,
+    )
+    st.page_link(ventas,       label="Ventas",       icon="📈")
+    st.page_link(inventario,   label="Inventario",   icon="📦")
+    st.page_link(campanas,     label="Campañas",     icon="📣")
+    st.page_link(devoluciones, label="Devoluciones", icon="↩️")
+    st.divider()
+
+st.session_state["_logo_rendered"] = True
 
 pg.run()
