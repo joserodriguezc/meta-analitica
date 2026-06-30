@@ -8,7 +8,9 @@ dependencies = [
     "duckdb>=1.5.4",
     "marimo>=0.23.11",
     "pandera[polars]>=0.32.1",
+    "plotly>=6.8.0",
     "polars>=1.42.0",
     "pyarrow>=24.0.0",
+    "streamlit>=1.58.0",
     "typer>=0.26.8",
 ]
