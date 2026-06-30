@@ -1,149 +1,184 @@
 """
-Reporte de ventas — genera reports/ventas.html con datos pre-computados desde DuckDB.
-Basado en los KPIs de memoria/metricas/ventas.md y requerimientos de memoria/clientes/cliente_demo.md.
+Reporte interactivo de ventas — Streamlit + Plotly.
+KPIs y gráficos basados en memoria/metricas/ventas.md.
 """
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+import streamlit as st
 import polars as pl
 from core_agent.skills import duckdb_client as db
-from core_agent.skills.report_builder import (
-    clp, variacion, _kpi_card, _tabla, generar_html
+from core_agent.skills.chart_builder import (
+    sidebar_logo, barras, linea, pie, kpi
 )
 
-OUTPUT = Path(__file__).parent / "ventas.html"
+st.set_page_config(
+    page_title="Ventas · MalayAI",
+    page_icon="📈",
+    layout="wide",
+)
 
+# ── Sidebar ────────────────────────────────────────────────────────────────────
 
-def _seccion_kpis() -> str:
-    # Totales acumulados (todos los períodos)
-    total = db.query("""
-        SELECT
-            SUM(ingreso_linea)                                      AS ingresos,
-            COUNT(DISTINCT id_orden)                                AS ordenes,
-            ROUND(SUM(ingreso_linea) / COUNT(DISTINCT id_orden), 0) AS ticket
-        FROM ventas
-        WHERE estado = 'completado'
-    """).to_dicts()[0]
+sidebar_logo()
+st.sidebar.title("Filtros")
 
-    # KPIs del último mes vs mes anterior
-    mensual = db.query("""
-        SELECT
-            mes,
-            SUM(ingreso_linea)                                      AS ingresos,
-            COUNT(DISTINCT id_orden)                                AS ordenes,
-            ROUND(SUM(ingreso_linea) / COUNT(DISTINCT id_orden), 0) AS ticket
-        FROM ventas
-        WHERE estado = 'completado'
-        GROUP BY mes ORDER BY mes
-    """)
-    filas = mensual.to_dicts()
-    ult, ant = filas[-1], filas[-2] if len(filas) >= 2 else None
+meses = db.query("SELECT DISTINCT mes FROM ventas ORDER BY mes").to_series().to_list()
+mes_labels = [m.strftime("%B %Y").capitalize() for m in meses]
+sel_meses = st.sidebar.multiselect("Meses", mes_labels, default=mes_labels)
+meses_sel = [m for m, l in zip(meses, mes_labels) if l in sel_meses]
+
+categorias = db.query("SELECT DISTINCT categoria FROM ventas ORDER BY categoria").to_series().to_list()
+sel_cats = st.sidebar.multiselect("Categorías", categorias, default=categorias)
+
+canales = db.query("SELECT DISTINCT COALESCE(canal, 'sin canal') AS canal FROM ventas ORDER BY canal").to_series().to_list()
+sel_canales = st.sidebar.multiselect("Canales", canales, default=canales)
+
+# ── Filtro base ────────────────────────────────────────────────────────────────
+
+if not meses_sel or not sel_cats or not sel_canales:
+    st.warning("Selecciona al menos un valor en cada filtro.")
+    st.stop()
+
+meses_sql = ", ".join(f"'{m}'" for m in meses_sel)
+cats_sql   = ", ".join(f"'{c}'" for c in sel_cats)
+canales_sql = ", ".join(f"'{c}'" for c in sel_canales)
+
+where = f"""
+    estado = 'completado'
+    AND mes IN ({meses_sql})
+    AND categoria IN ({cats_sql})
+    AND COALESCE(canal, 'sin canal') IN ({canales_sql})
+"""
+
+# ── Título ────────────────────────────────────────────────────────────────────
+
+st.title("Reporte de Ventas")
+st.caption("Cliente Demo S.A. · MalayAI Arnés Analítico")
+st.divider()
+
+# ── KPIs ──────────────────────────────────────────────────────────────────────
+
+total = db.query(f"""
+    SELECT
+        SUM(ingreso_linea)                                      AS ingresos,
+        COUNT(DISTINCT id_orden)                                AS ordenes,
+        ROUND(SUM(ingreso_linea) / COUNT(DISTINCT id_orden), 0) AS ticket,
+        SUM(cantidad)                                           AS unidades
+    FROM ventas WHERE {where}
+""").to_dicts()[0]
+
+mensual = db.query(f"""
+    SELECT mes,
+        SUM(ingreso_linea)                                      AS ingresos,
+        COUNT(DISTINCT id_orden)                                AS ordenes,
+        ROUND(SUM(ingreso_linea) / COUNT(DISTINCT id_orden), 0) AS ticket
+    FROM ventas WHERE {where}
+    GROUP BY mes ORDER BY mes
+""").to_dicts()
+
+ult = mensual[-1] if mensual else {}
+ant = mensual[-2] if len(mensual) >= 2 else None
+
+def _delta(actual, anterior):
+    if not anterior or anterior == 0:
+        return None
+    pct = (actual - anterior) / anterior * 100
+    return f"{pct:+.1f}%"
+
+def _clp(v):
+    return f"${v:,.0f}".replace(",", ".")
+
+st.subheader("Total Acumulado")
+c1, c2, c3, c4 = st.columns(4)
+with c1: kpi("Ingresos Totales", _clp(total["ingresos"] or 0))
+with c2: kpi("Ticket Promedio", _clp(total["ticket"] or 0))
+with c3: kpi("Órdenes", str(int(total["ordenes"] or 0)))
+with c4: kpi("Unidades Vendidas", str(int(total["unidades"] or 0)))
+
+if ult:
     mes_label = ult["mes"].strftime("%B %Y").capitalize()
+    st.subheader(f"Último Período — {mes_label}")
+    c1, c2, c3 = st.columns(3)
+    with c1: kpi("Ingresos del Mes", _clp(ult["ingresos"]), _delta(ult["ingresos"], ant["ingresos"] if ant else None))
+    with c2: kpi("Ticket Promedio", _clp(ult["ticket"]), _delta(ult["ticket"], ant["ticket"] if ant else None))
+    with c3: kpi("Órdenes del Mes", str(int(ult["ordenes"])), _delta(ult["ordenes"], ant["ordenes"] if ant else None))
 
-    cards_total = "".join([
-        _kpi_card("Ingresos Acumulados", clp(total["ingresos"])),
-        _kpi_card("Ticket Promedio Global", clp(total["ticket"])),
-        _kpi_card("Órdenes Totales", str(total["ordenes"])),
-    ])
+st.divider()
 
-    cards_mes = "".join([
-        _kpi_card("Ingresos del Mes", clp(ult["ingresos"]),
-                  variacion(ult["ingresos"], ant["ingresos"] if ant else 0)),
-        _kpi_card("Ticket Promedio", clp(ult["ticket"]),
-                  variacion(ult["ticket"], ant["ticket"] if ant else 0)),
-        _kpi_card("Órdenes del Mes", str(ult["ordenes"]),
-                  variacion(ult["ordenes"], ant["ordenes"] if ant else 0)),
-    ])
+# ── Gráficos fila 1: Evolución mensual ────────────────────────────────────────
 
-    return (
-        f'<h3>Total Acumulado</h3><div class="kpi-row">{cards_total}</div>'
-        f'<h3 style="margin-top:24px">Último Período — {mes_label}</h3>'
-        f'<div class="kpi-row">{cards_mes}</div>'
+df_mensual = db.query(f"""
+    SELECT
+        mes,
+        strftime(mes, '%b %Y')                                  AS periodo,
+        SUM(ingreso_linea)                                      AS Ingresos,
+        COUNT(DISTINCT id_orden)                                AS Ordenes
+    FROM ventas WHERE {where}
+    GROUP BY mes, periodo ORDER BY mes
+""")
+
+col1, col2 = st.columns(2)
+with col1:
+    st.plotly_chart(
+        barras(df_mensual, x="periodo", y="Ingresos", titulo="Ingresos por Mes"),
+        use_container_width=True,
+    )
+with col2:
+    st.plotly_chart(
+        linea(df_mensual, x="periodo", y="Ordenes", titulo="Evolución de Órdenes"),
+        use_container_width=True,
     )
 
+# ── Gráficos fila 2: Categoría y Canal ────────────────────────────────────────
 
-def _seccion_mensual() -> str:
-    df = db.query("""
-        SELECT
-            mes,
-            SUM(ingreso_linea)                                      AS Ingresos,
-            COUNT(DISTINCT id_orden)                                AS Ordenes,
-            ROUND(SUM(ingreso_linea) / COUNT(DISTINCT id_orden), 0) AS Ticket
-        FROM ventas WHERE estado = 'completado'
-        GROUP BY mes ORDER BY mes
-    """).with_columns([
-        pl.col("mes").dt.strftime("%B %Y").alias("Mes"),
-        pl.col("Ingresos").map_elements(clp, return_dtype=pl.Utf8),
-        pl.col("Ticket").map_elements(clp, return_dtype=pl.Utf8),
-    ]).rename({"Ordenes": "Órdenes"}).select(["Mes", "Ingresos", "Órdenes", "Ticket"])
-    return _tabla(df, "Evolución Mensual de Ventas")
+df_cat = db.query(f"""
+    SELECT categoria AS Categoría, SUM(ingreso_linea) AS Ingresos
+    FROM ventas WHERE {where}
+    GROUP BY categoria ORDER BY Ingresos DESC
+""")
 
+df_canal = db.query(f"""
+    SELECT COALESCE(canal, 'sin canal') AS Canal, SUM(ingreso_linea) AS Ingresos
+    FROM ventas WHERE {where}
+    GROUP BY canal ORDER BY Ingresos DESC
+""")
 
-def _seccion_top_productos() -> str:
-    df = db.query("""
-        SELECT
-            nombre_producto    AS Producto,
-            categoria          AS Categoria,
-            SUM(cantidad)      AS Unidades,
-            SUM(ingreso_linea) AS Ingresos
-        FROM ventas WHERE estado = 'completado'
-        GROUP BY nombre_producto, categoria
-        ORDER BY Unidades DESC LIMIT 5
-    """).with_columns(
-        pl.col("Ingresos").map_elements(clp, return_dtype=pl.Utf8)
+col1, col2 = st.columns(2)
+with col1:
+    st.plotly_chart(
+        pie(df_cat, nombres="Categoría", valores="Ingresos", titulo="Ingresos por Categoría"),
+        use_container_width=True,
     )
-    return _tabla(df, "Top 5 Productos por Unidades Vendidas")
-
-
-def _seccion_canal() -> str:
-    df = db.query("""
-        SELECT
-            COALESCE(canal, 'sin canal')   AS Canal,
-            COUNT(DISTINCT id_orden)       AS Ordenes,
-            SUM(ingreso_linea)             AS Ingresos,
-            ROUND(SUM(ingreso_linea) * 100.0
-                / SUM(SUM(ingreso_linea)) OVER (), 1) AS Pct
-        FROM ventas WHERE estado = 'completado'
-        GROUP BY canal ORDER BY Ingresos DESC
-    """).with_columns(
-        pl.col("Ingresos").map_elements(clp, return_dtype=pl.Utf8)
-    ).rename({"Ordenes": "Órdenes", "Pct": "% del Total"})
-    return _tabla(df, "Ventas por Canal")
-
-
-def _seccion_categoria() -> str:
-    df = db.query("""
-        SELECT
-            categoria            AS Categoria,
-            SUM(cantidad)        AS Unidades,
-            SUM(ingreso_linea)   AS Ingresos,
-            COUNT(DISTINCT id_orden) AS Ordenes
-        FROM ventas WHERE estado = 'completado'
-        GROUP BY categoria ORDER BY Ingresos DESC
-    """).with_columns(
-        pl.col("Ingresos").map_elements(clp, return_dtype=pl.Utf8)
-    ).rename({"Ordenes": "Órdenes"})
-    return _tabla(df, "Ventas por Categoría")
-
-
-def run():
-    secciones = [
-        _seccion_kpis(),
-        _seccion_mensual(),
-        _seccion_top_productos(),
-        _seccion_canal(),
-        _seccion_categoria(),
-    ]
-    html = generar_html(
-        secciones=secciones,
-        titulo="Reporte de Ventas",
-        subtitulo="Cliente Demo S.A. · MalayAI Arnés Analítico · Abril–Junio 2026",
+with col2:
+    st.plotly_chart(
+        pie(df_canal, nombres="Canal", valores="Ingresos", titulo="Ingresos por Canal"),
+        use_container_width=True,
     )
-    OUTPUT.write_text(html, encoding="utf-8")
-    print(f"  Reporte generado: {OUTPUT}")
 
+# ── Gráfico fila 3: Top productos ─────────────────────────────────────────────
 
-if __name__ == "__main__":
-    run()
+df_top = db.query(f"""
+    SELECT
+        nombre_producto AS Producto,
+        SUM(cantidad)      AS Unidades,
+        SUM(ingreso_linea) AS Ingresos
+    FROM ventas WHERE {where}
+    GROUP BY nombre_producto
+    ORDER BY Ingresos DESC LIMIT 10
+""")
+
+st.plotly_chart(
+    barras(df_top, x="Producto", y="Ingresos", titulo="Top 10 Productos por Ingresos"),
+    use_container_width=True,
+)
+
+# ── Tabla detalle ─────────────────────────────────────────────────────────────
+
+with st.expander("Ver tabla de evolución mensual"):
+    st.dataframe(
+        df_mensual.select(["periodo", "Ingresos", "Ordenes"]).to_pandas(),
+        use_container_width=True,
+    )
