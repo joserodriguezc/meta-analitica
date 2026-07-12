@@ -2,7 +2,9 @@
 
 **Arnés Analítico con Agentes de IA — PoC MalayAI Lab**
 
-Plataforma analítica basada en el paradigma de *Harness Engineering*. En lugar de construir un agente conversacional propio, el proyecto provee una infraestructura controlada (CLI + DuckDB + dashboards Streamlit) que permite a herramientas de IA existentes (Claude Code, Copilot, Cursor) operar sobre datos y reglas de negocio de forma auditable. El humano actúa como supervisor y aprobador.
+Plataforma analítica basada en el paradigma de *Harness Engineering*: en lugar de construir un agente conversacional propio, el proyecto provee una infraestructura controlada (CLI + DuckDB + Streamlit) que permite a herramientas de IA existentes (Claude Code, Copilot, Cursor) operar sobre datos y reglas de negocio de forma auditable. El humano actúa como supervisor y aprobador.
+
+Cubre **5 dominios analíticos** (ventas, inventario, campañas, devoluciones, envíos) y mantiene el conocimiento de negocio en un **bundle OKF conforme** — el Open Knowledge Format de Google: frontmatter YAML estándar, grafo de vínculos entre conceptos, portable a cualquier LLM o sistema de catálogo.
 
 ---
 
@@ -65,7 +67,7 @@ uv run main.py memoria --grafo              # Genera el visualizador HTML del gr
 ```
 meta-analitica/
 ├── CLAUDE.md                  ← Harness context para el agente de IA
-├── app.py                     ← App Streamlit unificada (4 dominios)
+├── app.py                     ← App Streamlit unificada (5 dominios)
 ├── assets/
 │   └── malayai_logo.png       ← Logo para el sidebar de reportes
 ├── memoria/                   ← Conocimiento del negocio (leer antes de codear)
@@ -76,7 +78,8 @@ meta-analitica/
 ├── core_agent/
 │   ├── skills/                ← Herramientas reutilizables
 │   │   ├── duckdb_client.py   ← Wrapper DuckDB (query, load, append)
-│   │   └── chart_builder.py   ← Helpers Plotly + CSS premium MalayAI
+│   │   ├── chart_builder.py   ← Helpers Plotly + CSS premium MalayAI
+│   │   └── okf_visualizer.py  ← Genera el grafo HTML del bundle OKF
 │   └── tasks/                 ← Recetas paso a paso para el agente
 ├── pipelines/
 │   ├── etl_ventas.py
@@ -111,18 +114,23 @@ uv sync
 ## Demo rápida
 
 ```bash
-# 1. Cargar datos de los 4 dominios
-uv run main.py etl ventas      --archivo ventas_demo.csv
-uv run main.py etl inventario  --archivo inventario_agosto.csv
-uv run main.py etl campanas    --archivo campanas_q3_2026.csv
+# 1. Cargar datos de los 5 dominios
+uv run main.py etl ventas       --archivo ventas_demo.csv
+uv run main.py etl inventario   --archivo inventario_agosto.csv
+uv run main.py etl campanas     --archivo campanas_q3_2026.csv
 uv run main.py etl devoluciones --archivo devoluciones_q3_2026.csv
+uv run main.py etl envios       --archivo envios_q3_2026.csv
 
 # 2. Validar calidad (bloquea si hay errores)
 uv run main.py test
 
 # 3. Levantar la app interactiva
 uv run main.py deploy
-# → Abre http://localhost:8501 con los 4 dashboards
+# → Abre http://localhost:8501 con los 5 dashboards
+
+# 4. Explorar el grafo de conocimiento
+uv run main.py memoria --grafo
+# → Genera memoria/grafo.html y lo abre en el browser
 ```
 
 ---
