@@ -27,6 +27,18 @@ El agente debe leerlo antes de ejecutar cualquier tarea analítica.
 | [../core_agent/tasks/validar_calidad.md](../core_agent/tasks/validar_calidad.md) | Validar calidad de datos con Pandera |
 | [../core_agent/tasks/crear_reporte.md](../core_agent/tasks/crear_reporte.md) | Generar un reporte Streamlit interactivo |
 
+## Tipos de Conocimiento (OKF Bundle)
+
+Este directorio es un **bundle OKF conforme** (Open Knowledge Format v0.1). Cada archivo `.md` no reservado contiene frontmatter YAML con un campo `type` que identifica su rol:
+
+| Tipo | Archivos | Significado |
+|---|---|---|
+| `metric_domain` | `metricas/*.md` | KPIs, esquema de datos y reglas de negocio de un dominio |
+| `client_profile` | `clientes/*.md` | Perfil, requerimientos y fuentes de datos del cliente |
+| `task_recipe` | `../core_agent/tasks/*.md` | Procedimientos paso a paso para el agente |
+
+Archivos reservados OKF: `index.md` (este archivo) y `log.md` (bitácora cronológica).
+
 ## Novedades Recientes
 
 Ver `log.md` para el historial de decisiones y cambios arquitectónicos.

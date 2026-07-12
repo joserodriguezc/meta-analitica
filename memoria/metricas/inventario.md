@@ -1,3 +1,12 @@
+---
+type: metric_domain
+title: "Métricas de Inventario"
+description: "KPIs, esquema y reglas de negocio del dominio de inventario (stock, margen, quiebre)"
+resource: "duckdb://data/local.duckdb#inventario"
+tags: [inventario, kpi, retail, stock]
+timestamp: "2026-07-11"
+---
+
 # Métricas de Inventario
 
 Definiciones oficiales de negocio para el dominio de inventario.
@@ -52,3 +61,10 @@ Archivo: `data/raw/inventario_<periodo>.csv`
 - `stock_minimo` debe ser mayor que 0
 - Los productos con estado `descontinuado` se excluyen de los KPIs de cobertura
 - Un `id_producto` no puede repetirse en el mismo archivo de carga
+
+## Vínculos
+
+- **Cliente que usa este dominio:** [Cliente Demo](../clientes/cliente_demo.md)
+- **Receta de ingesta:** [Crear un ETL](../../core_agent/tasks/crear_etl.md)
+- **Receta de validación:** [Validar Calidad](../../core_agent/tasks/validar_calidad.md)
+- **Receta de reporte:** [Crear un Reporte](../../core_agent/tasks/crear_reporte.md)

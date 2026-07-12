@@ -1,3 +1,12 @@
+---
+type: task_recipe
+title: "Receta: Validar Calidad de Datos"
+description: "Procedimiento para definir y ejecutar validaciones Pandera sobre tablas DuckDB"
+resource: "pipelines/calidad.py"
+tags: [calidad, pandera, validacion, duckdb, esquema]
+timestamp: "2026-07-11"
+---
+
 # Receta: Validar Calidad de Datos
 
 Sigue estos pasos para crear o actualizar validaciones de calidad sobre una tabla en DuckDB.
@@ -69,3 +78,8 @@ La consola debe mostrar `Calidad OK` o listar los errores encontrados con detall
 
 Si `main.py test` retorna código de salida 1, el comando `deploy` no debe ejecutarse.
 Este comportamiento ya está implementado en `main.py`.
+
+## Vínculos
+
+- **Paso anterior:** [Crear un ETL](./crear_etl.md) — pipeline de ingesta que produce la tabla a validar
+- **Siguiente paso:** [Crear un Reporte](./crear_reporte.md) — dashboard Streamlit (requiere que la validación pase sin errores)

@@ -1,6 +1,15 @@
+---
+type: task_recipe
+title: "Receta: Crear un Reporte"
+description: "Procedimiento para generar un dashboard Streamlit interactivo con chart_builder conectado a DuckDB"
+resource: "reports/{dominio}.py"
+tags: [reporte, streamlit, plotly, dashboard, chart_builder]
+timestamp: "2026-07-11"
+---
+
 # Receta: Crear un Reporte
 
-Sigue estos pasos para generar un reporte HTML estático con Marimo conectado a DuckDB.
+Sigue estos pasos para generar un reporte Streamlit interactivo conectado a DuckDB.
 
 ## Paso 1 — Leer el contexto del cliente
 
@@ -13,74 +22,73 @@ Consultar `memoria/metricas/<dominio>.md` para usar las fórmulas correctas en l
 Crear `reports/<dominio>.py` con la siguiente estructura:
 
 ```python
-import marimo as mo
-import duckdb
-import polars as pl
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# Conexión a DuckDB
-conn = duckdb.connect("data/local.duckdb", read_only=True)
+import streamlit as st
+from core_agent.skills.chart_builder import (
+    inject_css, sidebar_logo, page_header, kpi,
+    barras, linea, pie, scatter, treemap, heatmap,
+)
+from core_agent.skills import duckdb_client as db
 
-app = mo.App()
+st.set_page_config(page_title="<Dominio> — MalayAI", layout="wide")
+inject_css()
+sidebar_logo()
+page_header("<Dominio>", "<subtítulo descriptivo>")
 
-@app.cell
-def titulo():
-    return mo.md("# Reporte de <Dominio>")
+# ── Filtros en sidebar ────────────────────────────────────────────────────────
+with st.sidebar:
+    opciones = db.query("SELECT DISTINCT <columna> FROM <dominio> ORDER BY 1")["<columna>"].to_list()
+    seleccion = st.multiselect("<Filtro>", opciones, default=opciones)
 
-@app.cell
-def kpi_ingresos():
-    df = conn.execute("""
-        SELECT
-            DATE_TRUNC('month', fecha::DATE) AS mes,
-            SUM(precio_unitario * cantidad) AS ingresos_totales
-        FROM ventas
-        WHERE estado = 'completado'
-        GROUP BY 1
-        ORDER BY 1
-    """).pl()
-    return mo.ui.table(df)
+# ── Carga de datos ─────────────────────────────────────────────────────────────
+df = db.query(f"""
+    SELECT * FROM <dominio>
+    WHERE <columna> IN ({", ".join(f"'{v}'" for v in seleccion)})
+""")
 
-@app.cell
-def top_productos():
-    df = conn.execute("""
-        SELECT
-            nombre_producto,
-            SUM(cantidad) AS unidades_vendidas
-        FROM ventas
-        WHERE estado = 'completado'
-        GROUP BY 1
-        ORDER BY 2 DESC
-        LIMIT 5
-    """).pl()
-    return mo.ui.table(df)
+# ── KPIs ──────────────────────────────────────────────────────────────────────
+c1, c2, c3, c4 = st.columns(4)
+with c1: kpi("Métrica 1", df["col1"].sum(), icon="📊")
+with c2: kpi("Métrica 2", df["col2"].mean(), icon="📈")
 
-if __name__ == "__main__":
-    app.run()
+# ── Gráficos ──────────────────────────────────────────────────────────────────
+st.plotly_chart(barras(df, x="categoria", y="valor", titulo="Título"), use_container_width=True)
+
+# ── Tabla detalle ─────────────────────────────────────────────────────────────
+with st.expander("Ver datos completos"):
+    st.dataframe(df, use_container_width=True)
 ```
 
-## Paso 3 — Probar el reporte en modo interactivo
+## Paso 3 — Registrar en app.py
+
+Agregar la nueva página en `app.py`:
+
+```python
+# En la sección de páginas
+nuevo = st.Page("reports/<dominio>.py", title="<Dominio>", icon="<emoji>")
+
+# En st.navigation
+pg = st.navigation({"Analítica": [..., nuevo]}, position="hidden")
+
+# En la sección de sidebar
+st.page_link(nuevo, label="<Dominio>", icon="<emoji>")
+```
+
+## Paso 4 — Verificar el reporte
 
 ```bash
-uv run marimo edit reports/<dominio>.py
+uv run main.py deploy <dominio>   # reporte individual
+uv run main.py deploy             # app unificada con todos los dominios
 ```
 
-Verificar que todas las celdas renderizan correctamente.
-
-## Paso 4 — Exportar a HTML estático
-
-El comando `deploy` en el CLI ejecuta:
-
-```bash
-uv run marimo export html reports/<dominio>.py -o reports/<dominio>.html
-```
-
-## Paso 5 — Verificar el deploy
-
-```bash
-uv run main.py deploy
-```
-
-La consola debe indicar la ruta del archivo HTML generado.
-
-## Paso 6 — Registrar en la bitácora
+## Paso 5 — Registrar en la bitácora
 
 Agregar una entrada en `memoria/log.md` describiendo el reporte creado y las visualizaciones incluidas.
+
+## Vínculos
+
+- **Paso anterior:** [Crear un ETL](./crear_etl.md) — carga los datos en DuckDB
+- **Paso anterior:** [Validar Calidad](./validar_calidad.md) — asegura que los datos son correctos antes del deploy

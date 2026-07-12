@@ -1,3 +1,12 @@
+---
+type: metric_domain
+title: "Métricas de Campañas"
+description: "KPIs, esquema y reglas de negocio del dominio de campañas de marketing (ROAS, ROI, CTR, CPA)"
+resource: "duckdb://data/local.duckdb#campanas"
+tags: [campanas, kpi, marketing, roas, roi]
+timestamp: "2026-07-11"
+---
+
 # Métricas de Campañas
 
 Definiciones oficiales de negocio para el dominio de campañas de marketing.
@@ -91,3 +100,10 @@ Archivo: `data/raw/campanas_<periodo>.csv`
 - `impresiones`, `clicks`, `conversiones` e `ingresos_atribuidos` pueden ser 0 para campañas futuras
 - `id_campana` no puede repetirse en el mismo archivo de carga
 - `estado` se calcula automáticamente en el ETL según fechas relativas al día de ejecución
+
+## Vínculos
+
+- **Cliente que usa este dominio:** [Cliente Demo](../clientes/cliente_demo.md)
+- **Receta de ingesta:** [Crear un ETL](../../core_agent/tasks/crear_etl.md)
+- **Receta de validación:** [Validar Calidad](../../core_agent/tasks/validar_calidad.md)
+- **Receta de reporte:** [Crear un Reporte](../../core_agent/tasks/crear_reporte.md)

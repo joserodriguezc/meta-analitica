@@ -17,5 +17,8 @@ data/raw/
 reports/*.html
 reports/__marimo__/
 
+# Grafo OKF (generado con uv run main.py memoria --grafo)
+memoria/grafo.html
+
 # PDF de referencia
 *.pdf

@@ -1,3 +1,12 @@
+---
+type: task_recipe
+title: "Receta: Crear un ETL"
+description: "Procedimiento paso a paso para crear un pipeline de ingesta desde CSV hasta DuckDB usando Polars"
+resource: "pipelines/etl_{dominio}.py"
+tags: [etl, pipeline, duckdb, polars, ingesta]
+timestamp: "2026-07-11"
+---
+
 # Receta: Crear un ETL
 
 Sigue estos pasos en orden para crear un nuevo pipeline de ingesta de datos.
@@ -78,3 +87,8 @@ La consola debe mostrar la cantidad de filas cargadas sin errores.
 ## Paso 6 — Registrar en la bitácora
 
 Agregar una entrada en `memoria/log.md` con la fecha y descripción del ETL creado.
+
+## Vínculos
+
+- **Siguiente paso:** [Validar Calidad](./validar_calidad.md) — validar el esquema Pandera de la tabla recién cargada
+- **Siguiente paso:** [Crear un Reporte](./crear_reporte.md) — construir el dashboard Streamlit sobre los datos cargados

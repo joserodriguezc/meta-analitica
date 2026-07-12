@@ -1,3 +1,12 @@
+---
+type: metric_domain
+title: "Métricas de Ventas"
+description: "KPIs, esquema y reglas de negocio del dominio de ventas (ingresos, ticket promedio, unidades)"
+resource: "duckdb://data/local.duckdb#ventas"
+tags: [ventas, kpi, retail, ingresos]
+timestamp: "2026-07-11"
+---
+
 # Métricas de Ventas
 
 Definiciones oficiales de negocio para el dominio de ventas.
@@ -58,3 +67,10 @@ Archivo: `data/raw/ventas_demo.csv`
 - El precio unitario no puede ser negativo ni cero
 - Las fechas no pueden ser futuras al momento de la carga
 - Un `id_orden` no puede repetirse en el mismo día
+
+## Vínculos
+
+- **Cliente que usa este dominio:** [Cliente Demo](../clientes/cliente_demo.md)
+- **Receta de ingesta:** [Crear un ETL](../../core_agent/tasks/crear_etl.md)
+- **Receta de validación:** [Validar Calidad](../../core_agent/tasks/validar_calidad.md)
+- **Receta de reporte:** [Crear un Reporte](../../core_agent/tasks/crear_reporte.md)

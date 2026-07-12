@@ -1,3 +1,12 @@
+---
+type: client_profile
+title: "Cliente Demo — PoC MalayAI"
+description: "Perfil y requerimientos del cliente de demostración (retail e-commerce, 5 dominios analíticos)"
+resource: "data/raw/ventas_demo.csv"
+tags: [cliente, retail, poc, demo, ecommerce]
+timestamp: "2026-07-11"
+---
+
 # Cliente Demo — PoC MalayAI
 
 Perfil del cliente utilizado para la demostración de la PoC del Arnés Analítico.
@@ -61,4 +70,12 @@ El esquema esperado (columnas y tipos) está definido en `memoria/metricas/venta
 ## Contacto
 
 - **Responsable interno:** Equipo MalayAI
-- **Canal de entrega:** URL pública del reporte HTML
+- **Canal de entrega:** Dashboard Streamlit vía `uv run main.py deploy`
+
+## Dominios Analíticos Activos
+
+- [Ventas](../metricas/ventas.md) — ingresos, ticket promedio, unidades vendidas
+- [Inventario](../metricas/inventario.md) — valor stock, margen bruto, quiebre de stock
+- [Campañas](../metricas/campanas.md) — ROAS, ROI, CTR, CPA
+- [Devoluciones](../metricas/devoluciones.md) — tasa de aprobación, reembolso
+- [Envíos](../metricas/envios.md) — entrega a tiempo, couriers, costos logísticos

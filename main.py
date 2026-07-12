@@ -100,8 +100,18 @@ def deploy(
 
 
 @app.command()
-def memoria():
-    """Muestra el índice de memoria del negocio."""
+def memoria(
+    grafo: bool = typer.Option(False, "--grafo", help="Genera el visualizador HTML del grafo de conocimiento OKF."),
+):
+    """Muestra el índice de memoria del negocio. Con --grafo genera el visualizador HTML."""
+    if grafo:
+        import webbrowser, os
+        from core_agent.skills.okf_visualizer import generate
+        output = generate()
+        typer.echo(f"Grafo generado: {output}")
+        webbrowser.open(f"file:///{output}")
+        return
+
     index_path = Path("memoria/index.md")
 
     if not index_path.exists():

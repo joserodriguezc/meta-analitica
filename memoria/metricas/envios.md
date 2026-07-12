@@ -1,3 +1,12 @@
+---
+type: metric_domain
+title: "Métricas de Envíos"
+description: "KPIs, esquema y reglas de negocio del dominio de envíos (entrega a tiempo, couriers, costos)"
+resource: "duckdb://data/local.duckdb#envios"
+tags: [envios, kpi, logistica, courier]
+timestamp: "2026-07-11"
+---
+
 # Métricas de Envíos
 
 Definiciones oficiales de negocio para el dominio de envíos.
@@ -81,3 +90,11 @@ Archivo: `data/raw/envios_<periodo>.csv`
 - `costo_envio` siempre mayor a 0
 - `peso_kg` siempre mayor a 0
 - `fecha_despacho` no puede ser posterior a `fecha_entrega_estimada`
+
+## Vínculos
+
+- **Cliente que usa este dominio:** [Cliente Demo](../clientes/cliente_demo.md)
+- **Dominio relacionado:** [Devoluciones](./devoluciones.md) — complemento logístico (retornos de mercadería)
+- **Receta de ingesta:** [Crear un ETL](../../core_agent/tasks/crear_etl.md)
+- **Receta de validación:** [Validar Calidad](../../core_agent/tasks/validar_calidad.md)
+- **Receta de reporte:** [Crear un Reporte](../../core_agent/tasks/crear_reporte.md)

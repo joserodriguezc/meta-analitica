@@ -149,6 +149,70 @@ Registro cronológico de decisiones técnicas y de negocio relevantes para el pr
 
 ---
 
+## 2026-07-11 — Sprint OKF-2: Cross-links entre conceptos del grafo
+
+**Decisión:** Añadir sección `## Vínculos` al final de cada documento de concepto con enlaces relativos OKF entre nodos del grafo.
+
+**Contexto:** OKF forma un grafo de conocimiento donde los links entre documentos asertian relaciones. El tipo de relación lo da el texto circundante, no el enlace en sí. El bundle tenía documentos aislados — ahora están conectados.
+
+**Vínculos creados:**
+- Cada `metricas/*.md` → `clientes/cliente_demo.md` (quién usa el dominio) + 3 recetas (cómo se opera)
+- `metricas/devoluciones.md` ↔ `metricas/envios.md` (dominios logísticamente relacionados)
+- `clientes/cliente_demo.md` → 5 dominios de métricas (qué dominios cubre el cliente)
+- `tasks/crear_etl.md` → `validar_calidad.md` → `crear_reporte.md` (flujo secuencial del harness)
+
+**Estructura del grafo resultante:**
+```
+cliente_demo ←── [5 metricas] ←── [3 task_recipes en cadena]
+                  devoluciones ↔ envios (vínculo logístico)
+```
+
+---
+
+## 2026-07-11 — Sprint OKF-1: Conformance con Open Knowledge Format
+
+**Decisión:** Adoptar Google OKF (Open Knowledge Format) como estándar para el bundle de conocimiento en `memoria/`.
+
+**Contexto:** OKF es un estándar open source (markdown + YAML frontmatter) que hace el conocimiento legible tanto por humanos como por LLMs, sin depender de ningún proveedor. El bundle `memoria/` ya tenía una estructura compatible (index.md, log.md, subdirectorios por tipo) pero sin el frontmatter YAML que exige la spec.
+
+**Cambios aplicados:**
+- Añadido frontmatter OKF a los 9 archivos `.md` de concepto en `memoria/` y `core_agent/tasks/`
+- Campo obligatorio `type` con valores estandarizados: `metric_domain`, `client_profile`, `task_recipe`
+- Campos recomendados: `title`, `description`, `resource`, `tags`, `timestamp`
+- `resource` apunta al activo subyacente real: tabla DuckDB (`duckdb://data/local.duckdb#<tabla>`), archivo CSV o script Python
+- Actualizado `core_agent/tasks/crear_reporte.md` de Marimo (stack viejo) a Streamlit
+
+**Conformance status post-sprint:**
+- ✓ `index.md` — archivo reservado OKF
+- ✓ `log.md` — archivo reservado OKF
+- ✓ 5 archivos `metricas/*.md` — type: `metric_domain`
+- ✓ 1 archivo `clientes/*.md` — type: `client_profile`
+- ✓ 3 archivos `tasks/*.md` — type: `task_recipe`
+
+**Próximos pasos:** Sprint OKF-3 (visualizador HTML del grafo de conocimiento).
+
+---
+
+## 2026-07-11 — Sprint OKF-3: Visualizador del Grafo de Conocimiento
+
+**Decisión:** Crear `core_agent/skills/okf_visualizer.py` que genera un HTML self-contained con un grafo de fuerza interactivo a partir del bundle OKF.
+
+**Contexto:** El visualizador convierte los 9 documentos de concepto y sus vínculos en un grafo navegable. No depende de CDN ni de librerías externas — todo el JS/CSS está inlineado en el HTML generado.
+
+**Implementación:**
+- `build_graph()` parsea frontmatter YAML de todos los `.md` del bundle (excluye reservados)
+- Extrae links relativos `[texto](ruta.md)` del body para construir las aristas
+- Colores por tipo: `metric_domain`=#3B82F6, `client_profile`=#00D4FF, `task_recipe`=#8B5CF6
+- Simulación de fuerzas Canvas API: repulsión entre nodos + spring en aristas + gravedad al centro
+- Click en nodo → panel lateral con title, description, resource, tags, timestamp, archivo
+- Drag para reposicionar nodos manualmente
+
+**Resultado:** `uv run main.py memoria --grafo` genera `memoria/grafo.html` y lo abre en el browser.
+
+**Métricas del grafo inicial:** 9 nodos · 33 aristas
+
+---
+
 ## 2026-06-29 — Sprint 5: Capa de Reportes
 
 **Decisión:** Reemplazar `marimo export html` por generación directa de HTML estático desde Python.

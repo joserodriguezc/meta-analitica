@@ -1,3 +1,12 @@
+---
+type: metric_domain
+title: "Métricas de Devoluciones"
+description: "KPIs, esquema y reglas de negocio del dominio de devoluciones (tasa aprobación, reembolso)"
+resource: "duckdb://data/local.duckdb#devoluciones"
+tags: [devoluciones, kpi, retail, reembolso]
+timestamp: "2026-07-11"
+---
+
 # Métricas de Devoluciones
 
 Definiciones oficiales de negocio para el dominio de devoluciones.
@@ -80,3 +89,11 @@ Archivo: `data/raw/devoluciones_<periodo>.csv`
 - `reembolso` no puede ser negativo
 - `fecha_devolucion` debe ser posterior al año 2020
 - `reembolso` no debe superar `valor_devolucion` (cantidad_devuelta * precio_unitario)
+
+## Vínculos
+
+- **Cliente que usa este dominio:** [Cliente Demo](../clientes/cliente_demo.md)
+- **Dominio relacionado:** [Envíos](./envios.md) — complemento logístico (despacho de la mercadería devuelta)
+- **Receta de ingesta:** [Crear un ETL](../../core_agent/tasks/crear_etl.md)
+- **Receta de validación:** [Validar Calidad](../../core_agent/tasks/validar_calidad.md)
+- **Receta de reporte:** [Crear un Reporte](../../core_agent/tasks/crear_reporte.md)
