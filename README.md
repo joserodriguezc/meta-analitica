@@ -25,11 +25,12 @@ uv run main.py etl ventas --acumular        # Modo incremental (no reemplaza)
 uv run main.py test                         # Valida todos los dominios con Pandera
 uv run main.py test ventas                  # Solo valida la tabla ventas
 
-uv run main.py deploy                       # Levanta la app unificada (4 dominios)
+uv run main.py deploy                       # Levanta la app unificada (5 dominios)
 uv run main.py deploy ventas                # Solo el reporte de ventas
 uv run main.py deploy --puerto 8502         # Puerto personalizado
 
 uv run main.py memoria                      # Muestra el índice de conocimiento de negocio
+uv run main.py memoria --grafo              # Genera el visualizador HTML del grafo OKF
 ```
 
 ---
@@ -156,6 +157,33 @@ El agente no termina hasta que el flujo pase limpio.
 - **Memoria transparente:** El contexto de negocio está en `memoria/`, legible por humanos e IA.
 - **Calidad como bloqueo:** `test` falla con exit code 1 si hay errores — no hay deploy sin datos limpios.
 - **Infraestructura ligera:** DuckDB in-process + Streamlit local, sin servidores ni cloud.
+- **Bundle OKF conforme:** `memoria/` implementa el Open Knowledge Format de Google — frontmatter YAML + grafo de vínculos entre conceptos, portable a cualquier LLM o sistema de catálogo.
+
+---
+
+## Bundle de Conocimiento OKF
+
+El directorio `memoria/` es un **bundle OKF v0.1** (Open Knowledge Format). Cada documento de concepto tiene frontmatter YAML con los campos estándar:
+
+```yaml
+---
+type: metric_domain        # metric_domain | client_profile | task_recipe
+title: "Métricas de Ventas"
+description: "KPIs, esquema y reglas de negocio del dominio de ventas"
+resource: "duckdb://data/local.duckdb#ventas"
+tags: [ventas, kpi, retail]
+timestamp: "2026-07-11"
+---
+```
+
+El bundle forma un **grafo de conocimiento** con 9 nodos y 33 vínculos entre conceptos. Para visualizarlo:
+
+```bash
+uv run main.py memoria --grafo
+# → Genera memoria/grafo.html y lo abre en el browser
+```
+
+El visualizador es un HTML self-contained (sin CDN) con grafo de fuerza interactivo: click en un nodo para ver sus metadatos, drag para reposicionar.
 
 ---
 
